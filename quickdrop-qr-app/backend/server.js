@@ -9,6 +9,7 @@ import dns from 'dns';
 import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import QRCode from 'qrcode';
+import { WebSocketServer } from 'ws';
 
 dotenv.config();
 
@@ -19,6 +20,8 @@ const app = express();
 const port = process.env.PORT || 4000;
 const uploadDir = path.join(__dirname, 'uploads');
 const appHost = process.env.APP_DOWNLOAD_HOST || `http://localhost:${port}`;
+const signalingPath = '/ws';
+const rooms = new Map();
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -135,6 +138,33 @@ async function cleanupExpiredFiles() {
 
 setInterval(cleanupExpiredFiles, 60 * 60 * 1000); // hourly cleanup
 
+function cleanupRooms() {
+  const now = Date.now();
+  for (const [roomId, room] of rooms.entries()) {
+    if (room.updatedAt + 10 * 60 * 1000 < now || room.offerer?.readyState === 'closed') {
+      rooms.delete(roomId);
+    }
+  }
+}
+
+setInterval(cleanupRooms, 5 * 60 * 1000);
+
+function sendWS(ws, message) {
+  if (ws.readyState === ws.OPEN) {
+    ws.send(JSON.stringify(message));
+  }
+}
+
+function broadcastToRoom(roomId, message, sender) {
+  const room = rooms.get(roomId);
+  if (!room) return;
+  for (const ws of [room.offerer, room.answerer]) {
+    if (ws && ws !== sender && ws.readyState === ws.OPEN) {
+      sendWS(ws, message);
+    }
+  }
+}
+
 app.post('/api/upload', upload.single('file'), async (req, res) => {
   try {
     const clientId = req.body.clientId || 'anonymous';
@@ -244,12 +274,103 @@ app.get('/d/:fileId', async (req, res) => {
   readStream.pipe(res);
 });
 
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.post('/api/signal/create-offer', async (req, res) => {
+  const { clientId, fileName, fileSize, mimeType } = req.body;
+  const roomId = uuidv4();
+  rooms.set(roomId, {
+    offerer: null,
+    answerer: null,
+    offer: null,
+    metadata: { clientId, fileName, fileSize, mimeType },
+    updatedAt: Date.now()
+  });
+  res.json({ roomId });
+});
+
+app.get('/api/signal/join-offer/:id', async (req, res) => {
+  const room = rooms.get(req.params.id);
+  if (!room || !room.offer) {
+    return res.status(404).json({ error: 'Offer not found' });
+  }
+  room.updatedAt = Date.now();
+  res.json({ offer: room.offer, metadata: room.metadata });
+});
+
+app.post('/api/signal/cleanup', (req, res) => {
+  cleanupRooms();
+  res.json({ success: true });
+});
 
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(async () => {
     await cleanupExpiredFiles();
-    app.listen(port, () => console.log(`Server running on http://localhost:${port}`));
+    const server = app.listen(port, () => console.log(`Server running on http://localhost:${port}`));
+    const wss = new WebSocketServer({ server, path: signalingPath });
+
+    wss.on('connection', (ws) => {
+      ws.on('message', (message) => {
+        let data;
+        try {
+          data = JSON.parse(message.toString());
+        } catch {
+          return;
+        }
+
+        const { type, payload } = data;
+        if (!type) return;
+
+        if (type === 'register-offer') {
+          const { roomId } = payload;
+          const room = rooms.get(roomId);
+          if (!room) {
+            sendWS(ws, { type: 'error', payload: { message: 'Offer room not found' } });
+            return;
+          }
+          room.offerer = ws;
+          room.offer = payload.offer;
+          room.updatedAt = Date.now();
+          sendWS(ws, { type: 'offer-registered', payload: { roomId } });
+          return;
+        }
+
+        if (type === 'join-offer') {
+          const { roomId } = payload;
+          const room = rooms.get(roomId);
+          if (!room) {
+            sendWS(ws, { type: 'error', payload: { message: 'Offer room not found' } });
+            return;
+          }
+          room.answerer = ws;
+          room.updatedAt = Date.now();
+          sendWS(ws, { type: 'offer', payload: { offer: room.offer, metadata: room.metadata } });
+          return;
+        }
+
+        if (type === 'signal') {
+          const { roomId } = payload;
+          broadcastToRoom(roomId, { type: 'signal', payload }, ws);
+          return;
+        }
+
+        if (type === 'leave') {
+          const { roomId } = payload;
+          const room = rooms.get(roomId);
+          if (!room) return;
+          if (room.offerer === ws) room.offerer = null;
+          if (room.answerer === ws) room.answerer = null;
+          room.updatedAt = Date.now();
+          return;
+        }
+      });
+
+      ws.on('close', () => {
+        for (const [roomId, room] of rooms.entries()) {
+          if (room.offerer === ws) room.offerer = null;
+          if (room.answerer === ws) room.answerer = null;
+          if (!room.offerer && !room.answerer) rooms.delete(roomId);
+        }
+      });
+    });
   })
   .catch((err) => {
     console.error('MongoDB connection error', err);
