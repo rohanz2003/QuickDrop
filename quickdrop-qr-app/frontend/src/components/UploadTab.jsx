@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { addLocalHistoryEvent } from '../utils/historyStorage.js';
+import { apiUrl } from '../utils/api.js';
 
 const initialState = {
   file: null,
@@ -43,7 +44,7 @@ export default function UploadTab({ clientId }) {
     formData.append('sizeBytes', state.file.size);
 
     try {
-      const response = await fetch('/api/upload', {
+      const response = await fetch(apiUrl('/api/upload'), {
         method: 'POST',
         body: formData
       });

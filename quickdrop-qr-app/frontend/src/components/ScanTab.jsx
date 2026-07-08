@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import jsQR from 'jsqr';
 import { Html5Qrcode } from 'html5-qrcode';
 import { addLocalHistoryEvent } from '../utils/historyStorage.js';
+import { apiUrl, downloadUrl } from '../utils/api.js';
 
 function formatBytes(bytes) {
   if (!bytes) return '0 B';
@@ -40,7 +41,7 @@ export default function ScanTab({ clientId }) {
 
     const fileId = match[1];
     try {
-      const response = await fetch(`/api/file/${fileId}`);
+      const response = await fetch(apiUrl(`/api/file/${fileId}`));
       const data = await response.json();
       if (data.file) {
         setFilePreview(data.file);
@@ -129,7 +130,7 @@ export default function ScanTab({ clientId }) {
     });
 
     const link = document.createElement('a');
-    link.href = `/d/${fileId}?clientId=${clientId}`;
+    link.href = downloadUrl(fileId, clientId);
     link.setAttribute('download', '');
     document.body.appendChild(link);
     link.click();

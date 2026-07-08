@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { loadLocalHistory, mergeHistory, removeLocalHistoryEvent } from '../utils/historyStorage.js';
+import { apiUrl, downloadUrl } from '../utils/api.js';
 
 const filterOptions = ['All', 'Uploaded', 'Downloaded'];
 
@@ -19,7 +20,7 @@ export default function HistoryTab({ clientId }) {
     const loadHistory = async () => {
       const localEvents = loadLocalHistory(clientId);
       try {
-        const response = await fetch(`/api/history/${clientId}`);
+        const response = await fetch(apiUrl(`/api/history/${clientId}`));
         const data = await response.json();
         const merged = mergeHistory(localEvents, data.events || []);
         setEvents(merged);
@@ -40,7 +41,7 @@ export default function HistoryTab({ clientId }) {
     setEvents((prev) => prev.filter((item) => item.eventId !== event.eventId));
     removeLocalHistoryEvent(clientId, event.eventId);
 
-    await fetch('/api/history/delete', {
+    await fetch(apiUrl('/api/history/delete'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ clientId, fileId: event.fileId, type: event.type })
@@ -91,7 +92,7 @@ export default function HistoryTab({ clientId }) {
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={() => window.open(`/d/${event.fileId}?clientId=${clientId}`, '_blank')}
+                      onClick={() => window.open(downloadUrl(event.fileId, clientId), '_blank')}
                       className="rounded-3xl bg-primary px-4 py-2 text-sm font-semibold text-background transition hover:bg-accent"
                     >
                       Re-download
