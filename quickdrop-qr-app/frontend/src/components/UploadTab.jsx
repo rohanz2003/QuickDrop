@@ -95,17 +95,25 @@ export default function UploadTab({ clientId, mode }) {
       await storeOffer(roomId, peer.localDescription);
       setState((prev) => ({ ...prev, statusText: 'Waiting for receiver...' }));
 
+      const pendingCandidates = [];
       stopPollRef.current = startPolling(roomId, 'offerer', {
         onAnswer: async (answer) => {
           try {
             await peer.setRemoteDescription(new RTCSessionDescription(answer));
+            while (pendingCandidates.length) {
+              peer.addIceCandidate(new RTCIceCandidate(pendingCandidates.shift()));
+            }
           } catch (e) {
             setState((prev) => ({ ...prev, error: 'Connection failed', uploading: false }));
           }
         },
         onMessage: (msg) => {
           if (msg.candidate) {
-            peer.addIceCandidate(new RTCIceCandidate(msg.candidate));
+            if (peer.remoteDescription) {
+              peer.addIceCandidate(new RTCIceCandidate(msg.candidate));
+            } else {
+              pendingCandidates.push(msg.candidate);
+            }
           }
         }
       });
