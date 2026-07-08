@@ -20,6 +20,7 @@ export default function ScanTab({ clientId, mode, pendingRoom }) {
   const [cameraError, setCameraError] = useState('');
   const [p2pStatus, setP2pStatus] = useState('');
   const [p2pProgress, setP2pProgress] = useState(0);
+  const [p2pResult, setP2pResult] = useState(null);
   const imageInputRef = useRef(null);
   const scannerRef = useRef(null);
   const canvasRef = useRef(null);
@@ -104,25 +105,20 @@ export default function ScanTab({ clientId, mode, pendingRoom }) {
           if (data === '__END__') {
             const blob = new Blob(receiveBufferRef.current);
             const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = fileMetaRef.current?.fileName || 'download';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+            const meta = fileMetaRef.current;
 
             addLocalHistoryEvent(clientId, {
               clientId,
               fileId: 'p2p-' + Date.now(),
               type: 'download',
-              fileName: fileMetaRef.current?.fileName || 'Unknown',
-              fileSize: fileMetaRef.current?.fileSize || 0,
-              mimeType: fileMetaRef.current?.mimeType || 'application/octet-stream',
+              fileName: meta?.fileName || 'Unknown',
+              fileSize: meta?.fileSize || 0,
+              mimeType: meta?.mimeType || 'application/octet-stream',
               timestamp: new Date().toISOString()
             });
 
-            setP2pStatus('Download complete!');
+            setP2pResult({ blobUrl: url, ...meta });
+            setP2pStatus('Download ready!');
             setP2pProgress(100);
             return;
           }
@@ -205,7 +201,10 @@ export default function ScanTab({ clientId, mode, pendingRoom }) {
   };
 
   const processDecodedText = (text) => {
+    if (p2pResult?.blobUrl) URL.revokeObjectURL(p2pResult.blobUrl);
     setScanResult(text);
+    setP2pResult(null);
+    setFilePreview(null);
 
     const roomMatch = text.match(/[?&]room=([a-zA-Z0-9-]+)/);
     if (roomMatch) {
@@ -271,6 +270,16 @@ export default function ScanTab({ clientId, mode, pendingRoom }) {
     const link = document.createElement('a');
     link.href = downloadUrl(fileId, clientId);
     link.setAttribute('download', '');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const downloadP2PFile = () => {
+    if (!p2pResult?.blobUrl) return;
+    const link = document.createElement('a');
+    link.href = p2pResult.blobUrl;
+    link.download = p2pResult.fileName || 'download';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -388,6 +397,28 @@ export default function ScanTab({ clientId, mode, pendingRoom }) {
                       <button
                         type="button"
                         onClick={downloadFile}
+                        className="mt-2 inline-flex w-full items-center justify-center rounded-3xl bg-gradient-to-r from-primary to-accent px-5 py-4 text-sm font-semibold text-background transition-all duration-300 hover:shadow-glow"
+                      >
+                        Download file
+                      </button>
+                    </div>
+                  ) : p2pResult ? (
+                    <div className="space-y-3 animate-fade-in">
+                      <p className="text-sm text-onsurface/70">File received!</p>
+                      <p className="text-base font-semibold text-onsurface break-all">{p2pResult.fileName || 'Unknown file'}</p>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <p className="text-sm text-onsurface/70">Size</p>
+                          <p className="text-base font-semibold text-onsurface">{formatBytes(p2pResult.fileSize)}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-onsurface/70">Type</p>
+                          <p className="text-base font-semibold text-onsurface break-all">{p2pResult.mimeType || 'application/octet-stream'}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={downloadP2PFile}
                         className="mt-2 inline-flex w-full items-center justify-center rounded-3xl bg-gradient-to-r from-primary to-accent px-5 py-4 text-sm font-semibold text-background transition-all duration-300 hover:shadow-glow"
                       >
                         Download file
