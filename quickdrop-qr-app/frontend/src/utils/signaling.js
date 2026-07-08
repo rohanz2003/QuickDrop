@@ -1,49 +1,4 @@
-const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const WS_URL = import.meta.env.VITE_WS_URL || `${WS_PROTOCOL}//${window.location.host}/ws`;
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-
-export function connectSignaling(onMessage, onError) {
-  const ws = new WebSocket(WS_URL);
-
-  const timeout = setTimeout(() => {
-    if (ws.readyState !== WebSocket.OPEN) {
-      ws.close();
-      onError?.('Signaling server unreachable — deploy the backend to a platform that supports WebSocket (Render, Railway) or switch to Server mode.');
-    }
-  }, 5000);
-
-  ws.onopen = () => {
-    clearTimeout(timeout);
-    console.log('[Signaling] Connected');
-  };
-
-  ws.onclose = () => {
-    clearTimeout(timeout);
-    console.log('[Signaling] Disconnected');
-  };
-
-  ws.onerror = () => {
-    clearTimeout(timeout);
-    onError?.('WebSocket connection failed. Vercel does not support WebSocket — use Server mode or deploy the backend separately.');
-  };
-
-  ws.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      onMessage(data);
-    } catch (e) {
-      console.error('[Signaling] Parse error', e);
-    }
-  };
-
-  return ws;
-}
-
-export function sendSignaling(ws, type, payload) {
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type, payload }));
-  }
-}
 
 export async function createOfferRoom(clientId, fileName, fileSize, mimeType) {
   const res = await fetch(`${API_BASE}/api/signal/create-offer`, {
@@ -54,6 +9,83 @@ export async function createOfferRoom(clientId, fileName, fileSize, mimeType) {
   if (!res.ok) throw new Error(`Signaling server error: ${res.status}`);
   const data = await res.json();
   return data.roomId;
+}
+
+export async function storeOffer(roomId, offer) {
+  const res = await fetch(`${API_BASE}/api/signal/offer`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ roomId, offer })
+  });
+  if (!res.ok) throw new Error('Failed to store offer');
+}
+
+export async function fetchOffer(roomId) {
+  const res = await fetch(`${API_BASE}/api/signal/join-offer/${roomId}`);
+  if (!res.ok) throw new Error('Offer not found');
+  return res.json();
+}
+
+export async function storeAnswer(roomId, answer) {
+  const res = await fetch(`${API_BASE}/api/signal/answer`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ roomId, answer })
+  });
+  if (!res.ok) throw new Error('Failed to store answer');
+}
+
+export async function fetchAnswer(roomId) {
+  const res = await fetch(`${API_BASE}/api/signal/answer/${roomId}`);
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function sendIceCandidate(roomId, candidate, target) {
+  await fetch(`${API_BASE}/api/signal/ice`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ roomId, candidate, target })
+  });
+}
+
+export async function pollMessages(roomId, role) {
+  try {
+    const res = await fetch(`${API_BASE}/api/signal/poll/${roomId}?role=${role}`);
+    if (!res.ok) return { messages: [] };
+    return res.json();
+  } catch {
+    return { messages: [] };
+  }
+}
+
+export function startPolling(roomId, role, callbacks) {
+  let active = true;
+
+  const poll = async () => {
+    if (!active) return;
+    try {
+      const data = await pollMessages(roomId, role);
+      if (data.messages) {
+        for (const msg of data.messages) {
+          callbacks.onMessage?.(msg);
+        }
+      }
+      if (role === 'answerer' && data.offer) {
+        callbacks.onOffer?.(data.offer);
+      }
+      if (role === 'offerer' && data.answer) {
+        callbacks.onAnswer?.(data.answer);
+      }
+    } catch {
+      // ignore polling errors
+    }
+    if (active) setTimeout(poll, 800);
+  };
+
+  poll();
+
+  return () => { active = false; };
 }
 
 export const RTC_CONFIG = {

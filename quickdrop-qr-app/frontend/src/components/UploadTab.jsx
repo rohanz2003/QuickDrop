@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { addLocalHistoryEvent } from '../utils/historyStorage.js';
 import { apiUrl } from '../utils/api.js';
-import { connectSignaling, sendSignaling, createOfferRoom, RTC_CONFIG, CHUNK_SIZE } from '../utils/signaling.js';
+import { createOfferRoom, storeOffer, fetchAnswer, sendIceCandidate, startPolling, RTC_CONFIG, CHUNK_SIZE } from '../utils/signaling.js';
 
 const initialState = {
   file: null,
@@ -28,14 +28,14 @@ export default function UploadTab({ clientId, mode }) {
   const fileInputRef = useRef(null);
   const peerRef = useRef(null);
   const channelRef = useRef(null);
-  const wsRef = useRef(null);
   const roomIdRef = useRef(null);
   const xhrRef = useRef(null);
+  const stopPollRef = useRef(null);
 
   useEffect(() => {
     return () => {
+      stopPollRef.current?.();
       peerRef.current?.close();
-      wsRef.current?.close();
     };
   }, []);
 
@@ -78,8 +78,8 @@ export default function UploadTab({ clientId, mode }) {
       };
 
       peer.onicecandidate = (e) => {
-        if (e.candidate && wsRef.current) {
-          sendSignaling(wsRef.current, 'signal', { roomId, candidate: e.candidate.toJSON() });
+        if (e.candidate) {
+          sendIceCandidate(roomId, e.candidate.toJSON(), 'answerer');
         }
       };
 
@@ -92,26 +92,23 @@ export default function UploadTab({ clientId, mode }) {
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
 
-      const ws = connectSignaling(
-        (msg) => {
-          if (msg.type === 'signal' && msg.payload) {
-            const p = msg.payload;
-            if (p.answer) {
-              peer.setRemoteDescription(new RTCSessionDescription(p.answer));
-            } else if (p.candidate) {
-              peer.addIceCandidate(new RTCIceCandidate(p.candidate));
-            }
-          } else if (msg.type === 'peer-disconnected') {
-            setState((prev) => ({ ...prev, error: 'Receiver disconnected', uploading: false }));
+      await storeOffer(roomId, peer.localDescription);
+      setState((prev) => ({ ...prev, statusText: 'Waiting for receiver...' }));
+
+      stopPollRef.current = startPolling(roomId, 'offerer', {
+        onAnswer: async (answer) => {
+          try {
+            await peer.setRemoteDescription(new RTCSessionDescription(answer));
+          } catch (e) {
+            setState((prev) => ({ ...prev, error: 'Connection failed', uploading: false }));
           }
         },
-        (err) => setState((prev) => ({ ...prev, error: err, uploading: false }))
-      );
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        sendSignaling(ws, 'register-offer', { roomId, offer: peer.localDescription });
-      };
+        onMessage: (msg) => {
+          if (msg.candidate) {
+            peer.addIceCandidate(new RTCIceCandidate(msg.candidate));
+          }
+        }
+      });
     } catch (err) {
       setState((prev) => ({ ...prev, uploading: false, error: err.message }));
     }
@@ -295,14 +292,13 @@ export default function UploadTab({ clientId, mode }) {
   }, []);
 
   const cancelTransfer = () => {
+    stopPollRef.current?.();
     xhrRef.current?.abort();
     channelRef.current?.close();
     peerRef.current?.close();
-    wsRef.current?.close();
     xhrRef.current = null;
     channelRef.current = null;
     peerRef.current = null;
-    wsRef.current = null;
     roomIdRef.current = null;
     setState(initialState);
   };

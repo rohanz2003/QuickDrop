@@ -293,8 +293,11 @@ app.post('/api/signal/create-offer', async (req, res) => {
     offerer: null,
     answerer: null,
     offer: null,
+    answer: null,
     metadata: { clientId, fileName, fileSize, mimeType },
-    updatedAt: Date.now()
+    updatedAt: Date.now(),
+    offererQueue: [],
+    answererQueue: []
   });
   res.json({ roomId });
 });
@@ -306,6 +309,54 @@ app.get('/api/signal/join-offer/:id', async (req, res) => {
   }
   room.updatedAt = Date.now();
   res.json({ offer: room.offer, metadata: room.metadata });
+});
+
+app.post('/api/signal/offer', (req, res) => {
+  const { roomId, offer } = req.body;
+  const room = rooms.get(roomId);
+  if (!room) return res.status(404).json({ error: 'Room not found' });
+  room.offer = offer;
+  room.updatedAt = Date.now();
+  res.json({ success: true });
+});
+
+app.post('/api/signal/answer', (req, res) => {
+  const { roomId, answer } = req.body;
+  const room = rooms.get(roomId);
+  if (!room) return res.status(404).json({ error: 'Room not found' });
+  room.answer = answer;
+  room.updatedAt = Date.now();
+  res.json({ success: true });
+});
+
+app.get('/api/signal/answer/:id', (req, res) => {
+  const room = rooms.get(req.params.id);
+  if (!room || !room.answer) return res.status(404).json({ error: 'Answer not found' });
+  room.updatedAt = Date.now();
+  res.json({ answer: room.answer });
+});
+
+app.post('/api/signal/ice', (req, res) => {
+  const { roomId, candidate, target } = req.body;
+  const room = rooms.get(roomId);
+  if (!room) return res.status(404).json({ error: 'Room not found' });
+  if (target === 'offerer') {
+    room.offererQueue.push({ candidate });
+  } else {
+    room.answererQueue.push({ candidate });
+  }
+  room.updatedAt = Date.now();
+  res.json({ success: true });
+});
+
+app.get('/api/signal/poll/:id', (req, res) => {
+  const room = rooms.get(req.params.id);
+  if (!room) return res.status(404).json({ error: 'Room not found' });
+  const role = req.query.role || 'answerer';
+  const queue = role === 'offerer' ? room.offererQueue : room.answererQueue;
+  const messages = queue.splice(0, queue.length);
+  room.updatedAt = Date.now();
+  res.json({ messages, answer: room.answer || null, offer: room.offer || null });
 });
 
 app.post('/api/signal/cleanup', (req, res) => {
