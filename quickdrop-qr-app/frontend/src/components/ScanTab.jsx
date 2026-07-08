@@ -140,6 +140,16 @@ export default function ScanTab({ clientId, mode, pendingRoom }) {
       };
     };
 
+    peer.oniceconnectionstatechange = () => {
+      const s = peer.iceConnectionState;
+      if (s === 'checking') setP2pStatus('Checking connection...');
+      else if (s === 'connected') setP2pStatus('Downloading file...');
+      else if (s === 'failed') {
+        setError('Connection failed — NAT/firewall may be blocking. Try Server mode or set VITE_TURN_URL.');
+        setP2pStatus('');
+      }
+    };
+
     peer.onicecandidate = (e) => {
       if (e.candidate) {
         sendIceCandidate(roomId, e.candidate.toJSON(), 'offerer');

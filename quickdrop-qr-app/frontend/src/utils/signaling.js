@@ -92,11 +92,26 @@ export function startPolling(roomId, role, callbacks) {
   return () => { active = false; };
 }
 
+function getTurnServers() {
+  const turnUrl = import.meta.env.VITE_TURN_URL;
+  if (turnUrl) {
+    return [{
+      urls: turnUrl,
+      username: import.meta.env.VITE_TURN_USERNAME || '',
+      credential: import.meta.env.VITE_TURN_CREDENTIAL || ''
+    }];
+  }
+  return [];
+}
+
 export const RTC_CONFIG = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' }
-  ]
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    ...getTurnServers()
+  ],
+  iceCandidatePoolSize: 10
 };
 
 export const CHUNK_SIZE = 16384;

@@ -83,10 +83,13 @@ export default function UploadTab({ clientId, mode }) {
         }
       };
 
-      peer.onconnectionstatechange = () => {
-        if (peer.connectionState === 'disconnected' || peer.connectionState === 'failed') {
-          setState((prev) => ({ ...prev, error: 'Peer disconnected', uploading: false }));
-        }
+      peer.oniceconnectionstatechange = () => {
+        const s = peer.iceConnectionState;
+        if (s === 'checking') setState((prev) => ({ ...prev, statusText: 'Checking connection...' }));
+        else if (s === 'connected') setState((prev) => ({ ...prev, statusText: 'Connected! Sending file...' }));
+        else if (s === 'completed') setState((prev) => ({ ...prev, statusText: 'Connected! Sending file...' }));
+        else if (s === 'failed') setState((prev) => ({ ...prev, error: 'Connection failed — NAT/firewall may be blocking. Try Server mode or set VITE_TURN_URL.', uploading: false }));
+        else if (s === 'disconnected') setState((prev) => ({ ...prev, statusText: 'Connection unstable...' }));
       };
 
       const offer = await peer.createOffer();
