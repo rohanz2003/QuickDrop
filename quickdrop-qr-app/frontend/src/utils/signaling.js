@@ -2,11 +2,31 @@ const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const WS_URL = import.meta.env.VITE_WS_URL || `${WS_PROTOCOL}//${window.location.host}/ws`;
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
-export function connectSignaling(onMessage) {
+export function connectSignaling(onMessage, onError) {
   const ws = new WebSocket(WS_URL);
-  ws.onopen = () => console.log('[Signaling] Connected');
-  ws.onclose = () => console.log('[Signaling] Disconnected');
-  ws.onerror = (err) => console.error('[Signaling] Error', err);
+
+  const timeout = setTimeout(() => {
+    if (ws.readyState !== WebSocket.OPEN) {
+      ws.close();
+      onError?.('Signaling server unreachable — deploy the backend to a platform that supports WebSocket (Render, Railway) or switch to Server mode.');
+    }
+  }, 5000);
+
+  ws.onopen = () => {
+    clearTimeout(timeout);
+    console.log('[Signaling] Connected');
+  };
+
+  ws.onclose = () => {
+    clearTimeout(timeout);
+    console.log('[Signaling] Disconnected');
+  };
+
+  ws.onerror = () => {
+    clearTimeout(timeout);
+    onError?.('WebSocket connection failed. Vercel does not support WebSocket — use Server mode or deploy the backend separately.');
+  };
+
   ws.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
@@ -15,6 +35,7 @@ export function connectSignaling(onMessage) {
       console.error('[Signaling] Parse error', e);
     }
   };
+
   return ws;
 }
 
@@ -30,6 +51,7 @@ export async function createOfferRoom(clientId, fileName, fileSize, mimeType) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ clientId, fileName, fileSize, mimeType })
   });
+  if (!res.ok) throw new Error(`Signaling server error: ${res.status}`);
   const data = await res.json();
   return data.roomId;
 }

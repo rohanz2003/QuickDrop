@@ -23,7 +23,7 @@ function formatBytes(bytes) {
 
 export default function UploadTab({ clientId, mode }) {
   const [state, setState] = useState(initialState);
-  const [qrFormat, setQrFormat] = useState('svg');
+  const [qrFormat, setQrFormat] = useState('png');
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
   const peerRef = useRef(null);
@@ -91,18 +91,21 @@ export default function UploadTab({ clientId, mode }) {
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
 
-      const ws = connectSignaling((msg) => {
-        if (msg.type === 'signal' && msg.payload) {
-          const p = msg.payload;
-          if (p.answer) {
-            peer.setRemoteDescription(new RTCSessionDescription(p.answer));
-          } else if (p.candidate) {
-            peer.addIceCandidate(new RTCIceCandidate(p.candidate));
+      const ws = connectSignaling(
+        (msg) => {
+          if (msg.type === 'signal' && msg.payload) {
+            const p = msg.payload;
+            if (p.answer) {
+              peer.setRemoteDescription(new RTCSessionDescription(p.answer));
+            } else if (p.candidate) {
+              peer.addIceCandidate(new RTCIceCandidate(p.candidate));
+            }
+          } else if (msg.type === 'peer-disconnected') {
+            setState((prev) => ({ ...prev, error: 'Receiver disconnected', uploading: false }));
           }
-        } else if (msg.type === 'peer-disconnected') {
-          setState((prev) => ({ ...prev, error: 'Receiver disconnected', uploading: false }));
-        }
-      });
+        },
+        (err) => setState((prev) => ({ ...prev, error: err, uploading: false }))
+      );
       wsRef.current = ws;
 
       ws.onopen = () => {

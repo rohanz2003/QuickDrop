@@ -71,21 +71,27 @@ export default function ScanTab({ clientId, mode, pendingRoom }) {
     setP2pStatus('Connecting to peer...');
     setP2pProgress(0);
 
-    const ws = connectSignaling((msg) => {
-      if (msg.type === 'offer' && msg.payload) {
-        handleOffer(msg.payload, ws);
-      } else if (msg.type === 'signal' && msg.payload) {
-        if (msg.payload.candidate && peerRef.current) {
-          peerRef.current.addIceCandidate(new RTCIceCandidate(msg.payload.candidate));
+    const ws = connectSignaling(
+      (msg) => {
+        if (msg.type === 'offer' && msg.payload) {
+          handleOffer(msg.payload, ws);
+        } else if (msg.type === 'signal' && msg.payload) {
+          if (msg.payload.candidate && peerRef.current) {
+            peerRef.current.addIceCandidate(new RTCIceCandidate(msg.payload.candidate));
+          }
+        } else if (msg.type === 'error') {
+          setError(msg.payload?.message || 'Connection error');
+          setP2pStatus('');
+        } else if (msg.type === 'peer-disconnected') {
+          setError('Uploader disconnected');
+          setP2pStatus('');
         }
-      } else if (msg.type === 'error') {
-        setError(msg.payload?.message || 'Connection error');
-        setP2pStatus('');
-      } else if (msg.type === 'peer-disconnected') {
-        setError('Uploader disconnected');
+      },
+      (err) => {
+        setError(err);
         setP2pStatus('');
       }
-    });
+    );
     wsRef.current = ws;
 
     ws.onopen = () => {

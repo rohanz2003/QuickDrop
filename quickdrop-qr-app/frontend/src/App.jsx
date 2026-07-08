@@ -27,7 +27,7 @@ function useClientId() {
 function App() {
   const clientId = useClientId();
   const [activeTab, setActiveTab] = useState('Upload');
-  const [mode, setMode] = useState('P2P');
+  const [mode, setMode] = useState('Server');
   const [pendingRoom, setPendingRoom] = useState(null);
 
   useEffect(() => {
