@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { loadLocalHistory, mergeHistory, removeLocalHistoryEvent } from '../utils/historyStorage.js';
 import { apiUrl, downloadUrl } from '../utils/api.js';
 
-const filterOptions = ['All', 'Uploaded', 'Downloaded'];
+const filterOptions = [
+  { label: 'All', value: 'all' },
+  { label: 'Upload', value: 'upload' },
+  { label: 'Download', value: 'download' }
+];
 
 function formatBytes(bytes) {
   if (!bytes) return '0 B';
@@ -13,7 +17,7 @@ function formatBytes(bytes) {
 
 export default function HistoryTab({ clientId }) {
   const [events, setEvents] = useState([]);
-  const [filter, setFilter] = useState('All');
+  const [filter, setFilter] = useState('all');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -33,8 +37,8 @@ export default function HistoryTab({ clientId }) {
   }, [clientId]);
 
   const filteredEvents = useMemo(() => {
-    if (filter === 'All') return events;
-    return events.filter((event) => event.type === filter.toLowerCase());
+    if (filter === 'all') return events;
+    return events.filter((event) => event.type === filter);
   }, [events, filter]);
 
   const handleDelete = async (event) => {
@@ -59,15 +63,15 @@ export default function HistoryTab({ clientId }) {
           <div className="inline-flex gap-2 rounded-full bg-surface/60 p-2">
             {filterOptions.map((option) => (
               <button
-                key={option}
-                onClick={() => setFilter(option)}
+                key={option.value}
+                onClick={() => setFilter(option.value)}
                 className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  option === filter
+                  option.value === filter
                     ? 'bg-secondary text-background shadow-glow'
                     : 'text-onsurface/60 hover:text-onsurface'
                 }`}
               >
-                {option}
+                {option.label}
               </button>
             ))}
           </div>
@@ -82,7 +86,7 @@ export default function HistoryTab({ clientId }) {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm text-secondary/80 uppercase tracking-[0.2em]">
-                      {event.type}
+                      {event.type === 'upload' ? 'Upload' : event.type === 'download' ? 'Download' : event.type}
                     </p>
                     <p className="mt-2 text-base font-semibold text-onsurface">{event.fileName}</p>
                     <p className="mt-1 text-sm text-onsurface/70">
