@@ -136,7 +136,7 @@ async function cleanupExpiredFiles() {
   }
 }
 
-setInterval(cleanupExpiredFiles, 60 * 60 * 1000); // hourly cleanup
+setInterval(() => { if (dbConnected) cleanupExpiredFiles(); }, 60 * 60 * 1000);
 
 function cleanupRooms() {
   const now = Date.now();
@@ -165,7 +165,15 @@ function broadcastToRoom(roomId, message, sender) {
   }
 }
 
+function requireDB(req, res) {
+  if (!dbConnected) {
+    return res.status(503).json({ error: 'Database unavailable — use P2P mode' });
+  }
+  return null;
+}
+
 app.post('/api/upload', upload.single('file'), async (req, res) => {
+  if (requireDB(req, res)) return;
   try {
     const clientId = req.body.clientId || 'anonymous';
     if (!req.file) return res.status(400).json({ error: 'File required' });
@@ -225,12 +233,14 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 });
 
 app.get('/api/file/:fileId', async (req, res) => {
+  if (requireDB(req, res)) return;
   const file = await FileModel.findOne({ fileId: req.params.fileId }).lean();
   if (!file) return res.status(404).json({ error: 'File not found' });
   res.json({ file });
 });
 
 app.get('/api/history/:clientId', async (req, res) => {
+  if (requireDB(req, res)) return;
   const events = await HistoryEventModel.find({ clientId: req.params.clientId })
     .sort({ timestamp: -1 })
     .lean();
@@ -238,6 +248,7 @@ app.get('/api/history/:clientId', async (req, res) => {
 });
 
 app.post('/api/history/delete', async (req, res) => {
+  if (requireDB(req, res)) return;
   const { clientId, fileId, type, eventId } = req.body;
   if (!clientId || !fileId) return res.status(400).json({ error: 'Missing clientId or fileId' });
   await HistoryEventModel.deleteMany({ clientId, fileId, type });
@@ -245,6 +256,7 @@ app.post('/api/history/delete', async (req, res) => {
 });
 
 app.get('/d/:fileId', async (req, res) => {
+  if (requireDB(req, res)) return;
   const clientId = req.query.clientId || 'anonymous';
   const file = await FileModel.findOne({ fileId: req.params.fileId });
   if (!file) return res.status(404).send('File not found');
@@ -301,78 +313,86 @@ app.post('/api/signal/cleanup', (req, res) => {
   res.json({ success: true });
 });
 
+let dbConnected = false;
+
+function startServer() {
+  const server = app.listen(port, () => console.log(`Server running on http://localhost:${port}${dbConnected ? '' : ' (MongoDB unavailable — P2P mode only)'}`));
+  const wss = new WebSocketServer({ server, path: signalingPath });
+
+  wss.on('connection', (ws) => {
+    ws.on('message', (message) => {
+      let data;
+      try {
+        data = JSON.parse(message.toString());
+      } catch {
+        return;
+      }
+
+      const { type, payload } = data;
+      if (!type) return;
+
+      if (type === 'register-offer') {
+        const { roomId } = payload;
+        const room = rooms.get(roomId);
+        if (!room) {
+          sendWS(ws, { type: 'error', payload: { message: 'Offer room not found' } });
+          return;
+        }
+        room.offerer = ws;
+        room.offer = payload.offer;
+        room.updatedAt = Date.now();
+        sendWS(ws, { type: 'offer-registered', payload: { roomId } });
+        return;
+      }
+
+      if (type === 'join-offer') {
+        const { roomId } = payload;
+        const room = rooms.get(roomId);
+        if (!room) {
+          sendWS(ws, { type: 'error', payload: { message: 'Offer room not found' } });
+          return;
+        }
+        room.answerer = ws;
+        room.updatedAt = Date.now();
+        sendWS(ws, { type: 'offer', payload: { offer: room.offer, metadata: room.metadata } });
+        return;
+      }
+
+      if (type === 'signal') {
+        const { roomId } = payload;
+        broadcastToRoom(roomId, { type: 'signal', payload }, ws);
+        return;
+      }
+
+      if (type === 'leave') {
+        const { roomId } = payload;
+        const room = rooms.get(roomId);
+        if (!room) return;
+        if (room.offerer === ws) room.offerer = null;
+        if (room.answerer === ws) room.answerer = null;
+        room.updatedAt = Date.now();
+        return;
+      }
+    });
+
+    ws.on('close', () => {
+      for (const [roomId, room] of rooms.entries()) {
+        if (room.offerer === ws) room.offerer = null;
+        if (room.answerer === ws) room.answerer = null;
+        if (!room.offerer && !room.answerer) rooms.delete(roomId);
+      }
+    });
+  });
+}
+
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(async () => {
+    dbConnected = true;
+    console.log('MongoDB connected');
     await cleanupExpiredFiles();
-    const server = app.listen(port, () => console.log(`Server running on http://localhost:${port}`));
-    const wss = new WebSocketServer({ server, path: signalingPath });
-
-    wss.on('connection', (ws) => {
-      ws.on('message', (message) => {
-        let data;
-        try {
-          data = JSON.parse(message.toString());
-        } catch {
-          return;
-        }
-
-        const { type, payload } = data;
-        if (!type) return;
-
-        if (type === 'register-offer') {
-          const { roomId } = payload;
-          const room = rooms.get(roomId);
-          if (!room) {
-            sendWS(ws, { type: 'error', payload: { message: 'Offer room not found' } });
-            return;
-          }
-          room.offerer = ws;
-          room.offer = payload.offer;
-          room.updatedAt = Date.now();
-          sendWS(ws, { type: 'offer-registered', payload: { roomId } });
-          return;
-        }
-
-        if (type === 'join-offer') {
-          const { roomId } = payload;
-          const room = rooms.get(roomId);
-          if (!room) {
-            sendWS(ws, { type: 'error', payload: { message: 'Offer room not found' } });
-            return;
-          }
-          room.answerer = ws;
-          room.updatedAt = Date.now();
-          sendWS(ws, { type: 'offer', payload: { offer: room.offer, metadata: room.metadata } });
-          return;
-        }
-
-        if (type === 'signal') {
-          const { roomId } = payload;
-          broadcastToRoom(roomId, { type: 'signal', payload }, ws);
-          return;
-        }
-
-        if (type === 'leave') {
-          const { roomId } = payload;
-          const room = rooms.get(roomId);
-          if (!room) return;
-          if (room.offerer === ws) room.offerer = null;
-          if (room.answerer === ws) room.answerer = null;
-          room.updatedAt = Date.now();
-          return;
-        }
-      });
-
-      ws.on('close', () => {
-        for (const [roomId, room] of rooms.entries()) {
-          if (room.offerer === ws) room.offerer = null;
-          if (room.answerer === ws) room.answerer = null;
-          if (!room.offerer && !room.answerer) rooms.delete(roomId);
-        }
-      });
-    });
+    startServer();
   })
   .catch((err) => {
-    console.error('MongoDB connection error', err);
-    process.exit(1);
+    console.error('MongoDB connection failed — starting in P2P-only mode:', err.message);
+    startServer();
   });
