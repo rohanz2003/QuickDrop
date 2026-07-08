@@ -61,6 +61,8 @@ export async function pollMessages(roomId, role) {
 
 export function startPolling(roomId, role, callbacks) {
   let active = true;
+  let lastAnswer = null;
+  let lastOffer = null;
 
   const poll = async () => {
     if (!active) return;
@@ -71,16 +73,18 @@ export function startPolling(roomId, role, callbacks) {
           callbacks.onMessage?.(msg);
         }
       }
-      if (role === 'answerer' && data.offer) {
-        callbacks.onOffer?.(data.offer);
-      }
-      if (role === 'offerer' && data.answer) {
+      if (role === 'offerer' && data.answer && data.answer !== lastAnswer) {
+        lastAnswer = data.answer;
         callbacks.onAnswer?.(data.answer);
+      }
+      if (role === 'answerer' && data.offer && data.offer !== lastOffer) {
+        lastOffer = data.offer;
+        callbacks.onOffer?.(data.offer);
       }
     } catch {
       // ignore polling errors
     }
-    if (active) setTimeout(poll, 800);
+    if (active) setTimeout(poll, 200);
   };
 
   poll();
