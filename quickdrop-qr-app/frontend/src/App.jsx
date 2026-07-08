@@ -44,15 +44,14 @@ function App() {
     { key: 'Server', label: 'Server' }
   ];
 
-  const tabContent = useMemo(() => {
+  const tabsContent = useMemo(() => {
     if (!clientId) return null;
-    const content = {
-      Upload: <UploadTab key="Upload" clientId={clientId} mode={mode} />,
-      Scan: <ScanTab key="Scan" clientId={clientId} mode={mode} pendingRoom={mode === 'P2P' ? pendingRoom : null} />,
-      History: <HistoryTab key="History" clientId={clientId} />
+    return {
+      Upload: <UploadTab clientId={clientId} mode={mode} />,
+      Scan: <ScanTab clientId={clientId} mode={mode} pendingRoom={mode === 'P2P' ? pendingRoom : null} />,
+      History: <HistoryTab clientId={clientId} />
     };
-    return content[activeTab];
-  }, [activeTab, clientId, mode]);
+  }, [clientId, mode, pendingRoom]);
 
   return (
     <div className="min-h-screen bg-background text-onsurface">
@@ -116,7 +115,13 @@ function App() {
         </nav>
 
         <div className="rounded-[2rem] border border-white/10 bg-gradient-to-br from-surface/90 via-surface/70 to-surface-low/90 p-5 shadow-glow sm:p-8">
-          {tabContent}
+          {tabsContent && (
+            <>
+              <div className={activeTab === 'Upload' ? 'block' : 'hidden'}>{tabsContent.Upload}</div>
+              <div className={activeTab === 'Scan' ? 'block' : 'hidden'}>{tabsContent.Scan}</div>
+              <div className={activeTab === 'History' ? 'block' : 'hidden'}>{tabsContent.History}</div>
+            </>
+          )}
         </div>
 
         <footer className="mt-8 text-center text-xs text-onsurface/30">
