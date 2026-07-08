@@ -189,7 +189,7 @@ export default function ScanTab({ clientId, mode, pendingRoom }) {
         const canvas = canvasRef.current || document.createElement('canvas');
         canvas.width = image.width;
         canvas.height = image.height;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
         ctx.drawImage(image, 0, 0);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imageData.data, canvas.width, canvas.height);
@@ -208,9 +208,13 @@ export default function ScanTab({ clientId, mode, pendingRoom }) {
     setScanResult(text);
 
     const roomMatch = text.match(/[?&]room=([a-zA-Z0-9-]+)/);
-    if (roomMatch && mode === 'P2P') {
-      setP2pStatus('Starting P2P download...');
-      startP2PDownload(roomMatch[1]);
+    if (roomMatch) {
+      if (mode === 'P2P') {
+        setP2pStatus('Starting P2P download...');
+        startP2PDownload(roomMatch[1]);
+        return;
+      }
+      setError('This is a P2P QR code. Switch to Direct (P2P) mode to scan it.');
       return;
     }
 

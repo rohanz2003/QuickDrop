@@ -254,7 +254,7 @@ export default function UploadTab({ clientId, mode }) {
       const canvas = document.createElement('canvas');
       canvas.width = image.width;
       canvas.height = image.height;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (ctx) {
         ctx.drawImage(image, 0, 0);
         canvas.toBlob((blob) => {
