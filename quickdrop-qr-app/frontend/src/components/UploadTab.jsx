@@ -343,6 +343,28 @@ export default function UploadTab({ clientId }) {
     setState(initialState);
   };
 
+  const refreshCode = () => {
+    wsRef.current?.close();
+    xhrRef.current?.abort();
+    channelRef.current?.close();
+    peerRef.current?.close();
+    xhrRef.current = null;
+    wsRef.current = null;
+    channelRef.current = null;
+    peerRef.current = null;
+    roomIdRef.current = null;
+    setState((prev) => ({
+      ...prev,
+      roomCode: null,
+      qrSvg: null,
+      qrData: null,
+      uploading: false,
+      progress: 0,
+      error: null,
+      statusText: ''
+    }));
+  };
+
   const handleDragLeave = useCallback(() => {
     setDragOver(false);
   }, []);
@@ -519,7 +541,7 @@ export default function UploadTab({ clientId }) {
               </div>
               <button
                 type="button"
-                onClick={cancelTransfer}
+                onClick={refreshCode}
                 className="absolute -top-2 -right-2 rounded-full border border-onsurface/10 bg-surface-low p-1.5 text-onsurface/60 shadow-sm transition-all duration-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30"
                 title="Generate new code"
               >

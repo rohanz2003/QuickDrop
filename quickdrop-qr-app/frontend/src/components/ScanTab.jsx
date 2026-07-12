@@ -256,6 +256,17 @@ export default function ScanTab({ clientId, pendingRoom }) {
               >
                 Connect
               </button>
+              <button
+                type="button"
+                onClick={handleRemoveP2P}
+                disabled={!roomCode && !p2pStatus && !p2pResult}
+                className="rounded-xl border border-onsurface/10 bg-onsurface/5 p-2.5 text-onsurface/60 transition-all duration-300 hover:border-primary/30 hover:text-primary hover:bg-primary/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Clear"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
             </div>
           </div>
 
