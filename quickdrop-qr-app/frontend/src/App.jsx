@@ -5,7 +5,7 @@ import HistoryTab from './components/HistoryTab.jsx';
 
 const tabs = [
   { key: 'Upload', icon: 'M12 4v16m8-8H4' },
-  { key: 'Scan', icon: 'M12 4v1m6 11h2m-6 0h-2v4m0-11v3' },
+  { key: 'Receive', icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' },
   { key: 'History', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' }
 ];
 
@@ -33,9 +33,9 @@ function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const room = params.get('room');
-    if (room) {
+    if (room && /^\d{4}$/.test(room)) {
       setPendingRoom(room);
-      setActiveTab('Scan');
+      setActiveTab('Receive');
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
@@ -48,7 +48,7 @@ function App() {
     if (!clientId) return null;
     return {
       Upload: <UploadTab clientId={clientId} mode={mode} />,
-      Scan: <ScanTab clientId={clientId} mode={mode} pendingRoom={mode === 'P2P' ? pendingRoom : null} />,
+      Receive: <ScanTab clientId={clientId} mode={mode} pendingRoom={mode === 'P2P' ? pendingRoom : null} />,
       History: <HistoryTab clientId={clientId} />
     };
   }, [clientId, mode, pendingRoom]);
@@ -67,7 +67,7 @@ function App() {
               </h1>
               <p className="mt-2 max-w-2xl text-sm text-onsurface/60 sm:text-base">
                 {mode === 'P2P'
-                  ? 'Share files directly browser-to-browser with QR codes. No server storage.'
+                  ? 'Share files directly browser-to-browser with a 4-digit code. No server storage.'
                   : 'Upload any file, generate a QR share link, scan to download instantly.'}
               </p>
             </div>
@@ -118,7 +118,7 @@ function App() {
           {tabsContent && (
             <>
               <div className={activeTab === 'Upload' ? 'block' : 'hidden'}>{tabsContent.Upload}</div>
-              <div className={activeTab === 'Scan' ? 'block' : 'hidden'}>{tabsContent.Scan}</div>
+              <div className={activeTab === 'Receive' ? 'block' : 'hidden'}>{tabsContent.Receive}</div>
               <div className={activeTab === 'History' ? 'block' : 'hidden'}>{tabsContent.History}</div>
             </>
           )}

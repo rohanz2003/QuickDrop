@@ -8,6 +8,7 @@ const initialState = {
   file: null,
   qrSvg: null,
   qrData: null,
+  roomCode: null,
   error: null,
   uploading: false,
   progress: 0,
@@ -45,7 +46,7 @@ export default function UploadTab({ clientId, mode }) {
   }, [state.file]);
 
   const handleFile = useCallback((file) => {
-    setState((prev) => ({ ...prev, file, error: null, qrSvg: null, qrData: null }));
+    setState((prev) => ({ ...prev, file, error: null, qrSvg: null, qrData: null, roomCode: null }));
   }, []);
 
   const startP2P = async () => {
@@ -58,9 +59,7 @@ export default function UploadTab({ clientId, mode }) {
       const roomId = await createOfferRoom(clientId, file.name, file.size, file.type);
       roomIdRef.current = roomId;
 
-      const qrUrl = `${window.location.origin}?room=${roomId}`;
-      const qrSvg = await QRCode.toString(qrUrl, { type: 'svg', margin: 1, color: { dark: '#4F46E5', light: '#050505' } });
-      setState((prev) => ({ ...prev, qrSvg, qrData: qrUrl, statusText: 'Waiting for receiver to scan...' }));
+      setState((prev) => ({ ...prev, roomCode: roomId, statusText: 'Waiting for receiver to connect...' }));
 
       const peer = new RTCPeerConnection(RTC_CONFIG);
       peerRef.current = peer;
@@ -398,7 +397,7 @@ export default function UploadTab({ clientId, mode }) {
               </p>
               <p className="mt-1">
                 {mode === 'P2P'
-                  ? 'The receiver needs to scan the QR while you stay online. File is transferred directly browser-to-browser.'
+                  ? 'The receiver needs to enter your 4-digit code while you stay online. File is transferred directly browser-to-browser.'
                   : 'Upload limit is 2GB per file. Files expire automatically after 7 days.'}
               </p>
             </div>
@@ -495,7 +494,23 @@ export default function UploadTab({ clientId, mode }) {
         </div>
       </div>
 
-      {state.qrSvg && (
+      {state.roomCode && (
+        <section className="rounded-[2rem] border border-white/10 bg-surface-low/80 p-6 shadow-sm animate-bounce-in">
+          <div className="flex flex-col items-center gap-6">
+            <p className="text-sm uppercase tracking-[0.25em] text-primary/70">Share this code with receiver</p>
+            <div className="flex h-32 w-64 items-center justify-center rounded-3xl bg-background border border-primary/30 shadow-glow-lg">
+              <span className="text-6xl font-extrabold tracking-[0.2em] text-primary">{state.roomCode}</span>
+            </div>
+            <p className="text-xl font-semibold text-onsurface">Waiting for receiver to connect...</p>
+            <div className="flex items-center gap-2 rounded-3xl bg-primary/5 border border-primary/20 px-4 py-3 text-sm text-primary animate-pulse-glow">
+              <span className="flex h-2 w-2 rounded-full bg-primary animate-ping" />
+              Tell the receiver to enter this 4-digit code in the Receive tab
+            </div>
+          </div>
+        </section>
+      )}
+
+      {state.qrSvg && mode !== 'P2P' && (
         <section className="rounded-[2rem] border border-white/10 bg-surface-low/80 p-6 shadow-sm animate-bounce-in">
           <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="rounded-3xl border border-white/10 bg-background/80 p-6">
@@ -505,17 +520,11 @@ export default function UploadTab({ clientId, mode }) {
                   dangerouslySetInnerHTML={{ __html: state.qrSvg }}
                 />
               </div>
-              <p className="mt-3 text-center text-xs text-onsurface/50">
-                {mode === 'P2P' ? 'Share this QR with the receiver' : 'Scan to download'}
-              </p>
+              <p className="mt-3 text-center text-xs text-onsurface/50">Scan to download</p>
             </div>
             <div className="space-y-4">
-              <p className="text-sm uppercase tracking-[0.25em] text-primary/70">
-                {mode === 'P2P' ? 'Connection ready' : 'QR ready'}
-              </p>
-              <p className="text-xl font-semibold text-onsurface">
-                {mode === 'P2P' ? 'Waiting for receiver to connect...' : 'Scan this QR to download your file'}
-              </p>
+              <p className="text-sm uppercase tracking-[0.25em] text-primary/70">QR ready</p>
+              <p className="text-xl font-semibold text-onsurface">Scan this QR to download your file</p>
               <div className="rounded-3xl border border-white/5 bg-surface/80 p-4 text-sm text-onsurface-variant">
                 <p className="font-semibold text-onsurface flex items-center gap-2">
                   <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -541,12 +550,6 @@ export default function UploadTab({ clientId, mode }) {
                   Download QR
                 </button>
               </div>
-              {mode === 'P2P' && (
-                <div className="flex items-center gap-2 rounded-3xl bg-primary/5 border border-primary/20 px-4 py-3 text-sm text-primary animate-pulse-glow">
-                  <span className="flex h-2 w-2 rounded-full bg-primary animate-ping" />
-                  Waiting for receiver to scan the QR code and connect...
-                </div>
-              )}
             </div>
           </div>
         </section>

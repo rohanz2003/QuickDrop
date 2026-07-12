@@ -286,9 +286,17 @@ app.get('/d/:fileId', async (req, res) => {
   readStream.pipe(res);
 });
 
+function generateRoomCode() {
+  let code;
+  do {
+    code = String(Math.floor(1000 + Math.random() * 9000));
+  } while (rooms.has(code));
+  return code;
+}
+
 app.post('/api/signal/create-offer', async (req, res) => {
   const { clientId, fileName, fileSize, mimeType } = req.body;
-  const roomId = uuidv4();
+  const roomId = generateRoomCode();
   rooms.set(roomId, {
     offerer: null,
     answerer: null,
