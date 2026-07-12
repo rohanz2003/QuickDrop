@@ -168,34 +168,48 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
     let offset = 0;
     const reader = new FileReader();
 
+    const onDone = () => {
+      setState((prev) => ({ ...prev, uploading: false, progress: 100, statusText: 'Complete!' }));
+      addLocalHistoryEvent(clientId, {
+        clientId,
+        fileId: roomIdRef.current,
+        type: 'upload',
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+        timestamp: new Date().toISOString()
+      });
+    };
+
+    const sendEnd = () => {
+      channel.onbufferedamountlow = null;
+      channel.send(new TextEncoder().encode('__END__'));
+      onDone();
+    };
+
     const readNext = () => {
       if (channel.readyState !== 'open') return;
 
-      while (offset < fileSize && channel.bufferedAmount < 1048576) {
-        const end = Math.min(offset + CHUNK_SIZE, fileSize);
-        const slice = file.slice(offset, end);
-        offset = end;
-        reader.readAsArrayBuffer(slice);
-        return;
-      }
-
       if (offset >= fileSize) {
-        channel.onbufferedamountlow = null;
-        channel.send(new TextEncoder().encode('__END__'));
-        setState((prev) => ({ ...prev, uploading: false, progress: 100, statusText: 'Complete!' }));
-        addLocalHistoryEvent(clientId, {
-          clientId,
-          fileId: roomIdRef.current,
-          type: 'upload',
-          fileName: file.name,
-          fileSize: file.size,
-          mimeType: file.type,
-          timestamp: new Date().toISOString()
-        });
+        if (channel.bufferedAmount === 0) {
+          sendEnd();
+        } else {
+          channel.onbufferedamountlow = sendEnd;
+        }
         return;
       }
 
-      channel.onbufferedamountlow = readNext;
+      if (channel.bufferedAmount >= 1048576) {
+        channel.onbufferedamountlow = readNext;
+        return;
+      }
+
+      channel.onbufferedamountlow = null;
+
+      const end = Math.min(offset + CHUNK_SIZE, fileSize);
+      const slice = file.slice(offset, end);
+      offset = end;
+      reader.readAsArrayBuffer(slice);
     };
 
     reader.onload = () => {
