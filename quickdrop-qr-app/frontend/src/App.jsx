@@ -84,7 +84,7 @@ function App() {
 
       {/* CONTENT — light panel */}
       <div className="light-panel flex flex-1 flex-col" style={{ background: '#f8f9fc' }}>
-        <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-8 sm:px-10">
+        <div className="flex flex-1 flex-col px-6 py-8 sm:px-10">
           {/* Tab switcher */}
           <div className="inline-flex gap-1.5 self-center rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-black/5">
             {tabs.map((tab) => (
