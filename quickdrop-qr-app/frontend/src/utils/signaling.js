@@ -1,3 +1,5 @@
+import { API_BASE } from './api.js';
+
 export const RTC_CONFIG = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -7,10 +9,11 @@ export const RTC_CONFIG = {
 
 export const CHUNK_SIZE = 16384;
 
-export const SIGNALING_WS_URL = import.meta.env.VITE_SIGNALING_URL || '/ws';
+const wsBase = import.meta.env.VITE_SIGNALING_URL;
+export const SIGNALING_WS_URL = wsBase || (API_BASE ? API_BASE.replace(/^http/, 'ws') + '/ws' : '/ws');
 
 export async function createOfferRoom(clientId, fileName, fileSize, mimeType) {
-  const res = await fetch('/api/signal/create-offer', {
+  const res = await fetch(`${API_BASE}/api/signal/create-offer`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ clientId, fileName, fileSize, mimeType })
