@@ -5,19 +5,17 @@ import HistoryTab from './components/HistoryTab.jsx';
 import ChatSidebar from './components/ChatSidebar.jsx';
 
 const tabs = [
-  {
-    key: 'Send',
-    icon: 'M12 4v16m8-8H4'
-  },
-  {
-    key: 'Receive',
-    icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'
-  },
-  {
-    key: 'History',
-    icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'
-  }
+  { key: 'Send', icon: 'M12 4v16m8-8H4' },
+  { key: 'Receive', icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' },
+  { key: 'History', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' }
 ];
+
+const navIcons = {
+  Send: 'M12 4v16m8-8H4',
+  Receive: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z',
+  History: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+  Chat: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z'
+};
 
 function useClientId() {
   const [clientId, setClientId] = useState(null);
@@ -42,6 +40,7 @@ function App() {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatConnected, setChatConnected] = useState(false);
   const [chatRole, setChatRole] = useState(null);
+  const [mobileChatOpen, setMobileChatOpen] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -54,19 +53,13 @@ function App() {
   }, []);
 
   const handleChannelUpdate = (update) => {
-    if (update.channel) {
-      channelRef.current = update.channel;
-    }
+    if (update.channel) channelRef.current = update.channel;
     if (update.connected !== undefined) {
       setChatConnected(update.connected);
       if (!update.connected) setChatRole(null);
     }
-    if (update.role) {
-      setChatRole(update.role);
-    }
-    if (update.chatMessage) {
-      setChatMessages((prev) => [...prev, update.chatMessage]);
-    }
+    if (update.role) setChatRole(update.role);
+    if (update.chatMessage) setChatMessages((prev) => [...prev, update.chatMessage]);
   };
 
   const sendChat = (text) => {
@@ -86,18 +79,26 @@ function App() {
     };
   }, [clientId, pendingRoom]);
 
+  const handleNavClick = (key) => {
+    if (key === 'Chat') {
+      setMobileChatOpen(true);
+    } else {
+      setActiveTab(key);
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-background text-onsurface">
       {/* HEADER */}
-      <header className="bg-gradient-to-r from-[#4338ca] via-[#3730a3] to-[#312e81] px-6 py-4 shadow-lg shadow-indigo-500/20">
+      <header className="bg-gradient-to-r from-[#4338ca] via-[#3730a3] to-[#312e81] px-4 py-3 shadow-lg shadow-indigo-500/20 sm:px-6 sm:py-4">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#4338ca] to-[#6366f1] shadow-md shadow-white/10">
-              <span className="text-lg font-extrabold text-white">Q</span>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#4338ca] to-[#6366f1] shadow-md shadow-white/10 sm:h-10 sm:w-10">
+              <span className="text-base font-extrabold text-white sm:text-lg">Q</span>
             </div>
             <div>
-              <p className="text-lg font-bold text-white">QuickDrop</p>
-              <p className="text-[11px] text-indigo-200/80">P2P file sharing</p>
+              <p className="text-base font-bold text-white sm:text-lg">QuickDrop</p>
+              <p className="text-[10px] text-indigo-200/80 sm:text-[11px]">P2P file sharing</p>
             </div>
           </div>
 
@@ -112,20 +113,22 @@ function App() {
 
       {/* BODY */}
       <div className="light-panel flex flex-1" style={{ background: '#f8f9fc' }}>
-        {/* Chat Sidebar */}
+        {/* Desktop Chat Sidebar (hidden on mobile) */}
         {chatConnected && (
-          <ChatSidebar
-            messages={chatMessages}
-            connected={chatConnected}
-            role={chatRole}
-            onSend={sendChat}
-          />
+          <div className="hidden sm:flex">
+            <ChatSidebar
+              messages={chatMessages}
+              connected={chatConnected}
+              role={chatRole}
+              onSend={sendChat}
+            />
+          </div>
         )}
 
         {/* Main content */}
-        <div className="flex flex-1 flex-col px-6 py-8 sm:px-10">
-          {/* Tab switcher */}
-          <div className="inline-flex gap-1.5 self-center rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-black/5">
+        <div className="flex flex-1 flex-col px-4 py-6 pb-20 sm:px-10 sm:pb-8">
+          {/* Desktop tab switcher (hidden on mobile) */}
+          <div className="hidden self-center sm:inline-flex sm:gap-1.5 sm:rounded-2xl sm:bg-white sm:p-1.5 sm:shadow-sm sm:ring-1 sm:ring-black/5">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
@@ -144,7 +147,7 @@ function App() {
             ))}
           </div>
 
-          <div className="mt-8 flex-1">
+          <div className="mt-6 flex-1 sm:mt-8">
             {tabsContent && (
               <>
                 <div className={activeTab === 'Send' ? 'block' : 'hidden'}>{tabsContent.Send}</div>
@@ -156,8 +159,57 @@ function App() {
         </div>
       </div>
 
-      {/* FOOTER */}
-      <footer className="bg-[#f1f3f7] py-4 text-center text-xs text-[#9ca3af]">
+      {/* Mobile Bottom Nav (hidden on desktop) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-onsurface/10 bg-white px-2 py-1 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] sm:hidden">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`flex flex-col items-center gap-0.5 rounded-xl px-4 py-2 text-xs font-medium transition-all duration-200 ${
+              activeTab === tab.key
+                ? 'text-[#4338ca]'
+                : 'text-[#9ca3af] hover:text-[#6b7280]'
+            }`}
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={activeTab === tab.key ? 2.5 : 1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d={tab.icon} />
+            </svg>
+            <span>{tab.key}</span>
+          </button>
+        ))}
+        {chatConnected && (
+          <button
+            onClick={() => handleNavClick('Chat')}
+            className={`flex flex-col items-center gap-0.5 rounded-xl px-4 py-2 text-xs font-medium transition-all duration-200 ${
+              mobileChatOpen
+                ? 'text-[#4338ca]'
+                : 'text-[#9ca3af] hover:text-[#6b7280]'
+            }`}
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={mobileChatOpen ? 2.5 : 1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d={navIcons.Chat} />
+            </svg>
+            <span>Chat</span>
+          </button>
+        )}
+      </nav>
+
+      {/* Mobile Full-Screen Chat Overlay */}
+      {mobileChatOpen && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-white sm:hidden">
+          <ChatSidebar
+            messages={chatMessages}
+            connected={chatConnected}
+            role={chatRole}
+            onSend={sendChat}
+            fullScreen
+            onClose={() => setMobileChatOpen(false)}
+          />
+        </div>
+      )}
+
+      {/* Desktop FOOTER (hidden on mobile) */}
+      <footer className="hidden border-t border-onsurface/10 bg-[#f1f3f7] py-4 text-center text-xs text-[#9ca3af] sm:block">
         <div className="mx-auto max-w-5xl">
           QuickDrop &mdash; Files are transferred directly between devices.
         </div>

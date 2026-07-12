@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 
-export default function ChatSidebar({ messages, connected, onSend, role }) {
+export default function ChatSidebar({ messages, connected, onSend, role, fullScreen, onClose }) {
   const inputRef = useRef(null);
   const listRef = useRef(null);
 
@@ -20,10 +20,21 @@ export default function ChatSidebar({ messages, connected, onSend, role }) {
     }
   };
 
+  const containerClass = fullScreen
+    ? 'flex flex-1 flex-col bg-white'
+    : 'flex w-72 flex-col self-stretch border-r border-onsurface/10 bg-white shadow-sm';
+
   return (
-    <div className="flex w-72 flex-col self-stretch border-r border-onsurface/10 bg-white shadow-sm">
+    <div className={containerClass}>
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-onsurface/10 px-4 py-3">
+        {fullScreen && onClose && (
+          <button type="button" onClick={onClose} className="mr-1 rounded-xl p-1.5 text-[#6b7280] hover:bg-[#f3f4f6]">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
         <span className={`h-3 w-3 rounded-full ${connected ? 'bg-green-500 shadow-sm shadow-green-500/50' : 'bg-red-500 shadow-sm shadow-red-500/50'}`} />
         <div>
           <p className="text-sm font-semibold text-[#1a1a2e]">Chat</p>
