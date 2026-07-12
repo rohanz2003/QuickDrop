@@ -9,7 +9,7 @@ function formatBytes(bytes) {
   return `${(bytes / 1024 ** power).toFixed(1)} ${units[power]}`;
 }
 
-export default function ScanTab({ clientId, pendingRoom }) {
+export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
   const [roomCode, setRoomCode] = useState('');
   const [error, setError] = useState('');
   const [p2pStatus, setP2pStatus] = useState('');
@@ -136,10 +136,20 @@ export default function ScanTab({ clientId, pendingRoom }) {
 
       channel.onopen = () => {
         setP2pStatus('Receiving file...');
+        onChannelUpdate?.({ channel, connected: true, role: 'receiver' });
       };
 
       channel.onmessage = (e) => {
         const data = e.data;
+
+        if (data instanceof ArrayBuffer && data.byteLength >= 8) {
+          const prefix = new TextDecoder().decode(data.slice(0, 8));
+          if (prefix === '__CHAT__') {
+            const chatData = JSON.parse(new TextDecoder().decode(data.slice(8)));
+            onChannelUpdate?.({ chatMessage: { ...chatData, from: 'peer' } });
+            return;
+          }
+        }
 
         if (data instanceof ArrayBuffer && data.byteLength === 6 && new TextDecoder().decode(data) === '__END__') {
           tryFinish();
@@ -179,6 +189,17 @@ export default function ScanTab({ clientId, pendingRoom }) {
           type: 'signal',
           payload: { roomId, candidate: e.candidate.toJSON() }
         }));
+      }
+    };
+
+    peer.onconnectionstatechange = () => {
+      if (peer.connectionState === 'connected') {
+        onChannelUpdate?.({ connected: true });
+      }
+      if (peer.connectionState === 'disconnected' || peer.connectionState === 'failed') {
+        setError('Peer disconnected');
+        setP2pStatus('');
+        onChannelUpdate?.({ connected: false });
       }
     };
   }, [clientId]);

@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import UploadTab from './components/UploadTab.jsx';
 import ScanTab from './components/ScanTab.jsx';
 import HistoryTab from './components/HistoryTab.jsx';
+import ChatSidebar from './components/ChatSidebar.jsx';
 
 const tabs = [
   {
@@ -37,6 +38,10 @@ function App() {
   const clientId = useClientId();
   const [activeTab, setActiveTab] = useState('Send');
   const [pendingRoom, setPendingRoom] = useState(null);
+  const channelRef = useRef(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatConnected, setChatConnected] = useState(false);
+  const [chatRole, setChatRole] = useState(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -48,18 +53,42 @@ function App() {
     }
   }, []);
 
+  const handleChannelUpdate = (update) => {
+    if (update.channel) {
+      channelRef.current = update.channel;
+    }
+    if (update.connected !== undefined) {
+      setChatConnected(update.connected);
+      if (!update.connected) setChatRole(null);
+    }
+    if (update.role) {
+      setChatRole(update.role);
+    }
+    if (update.chatMessage) {
+      setChatMessages((prev) => [...prev, update.chatMessage]);
+    }
+  };
+
+  const sendChat = (text) => {
+    const ch = channelRef.current;
+    if (!ch || ch.readyState !== 'open') return;
+    const msg = { text, from: 'me', timestamp: Date.now() };
+    ch.send(new TextEncoder().encode('__CHAT__' + JSON.stringify(msg)));
+    setChatMessages((prev) => [...prev, msg]);
+  };
+
   const tabsContent = useMemo(() => {
     if (!clientId) return null;
     return {
-      Send: <UploadTab clientId={clientId} />,
-      Receive: <ScanTab clientId={clientId} pendingRoom={pendingRoom} />,
+      Send: <UploadTab clientId={clientId} onChannelUpdate={handleChannelUpdate} />,
+      Receive: <ScanTab clientId={clientId} pendingRoom={pendingRoom} onChannelUpdate={handleChannelUpdate} />,
       History: <HistoryTab clientId={clientId} />
     };
   }, [clientId, pendingRoom]);
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-onsurface">
-      {/* HEADER — indigo gradient */}
+      {/* HEADER */}
       <header className="bg-gradient-to-r from-[#4338ca] via-[#3730a3] to-[#312e81] px-6 py-4 shadow-lg shadow-indigo-500/20">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <div className="flex items-center gap-3">
@@ -72,7 +101,6 @@ function App() {
             </div>
           </div>
 
-          {/* Desktop device ID */}
           <div className="hidden rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-xs text-white/70 backdrop-blur sm:block">
             <span className="font-semibold text-white/50">ID: </span>
             <span className="font-mono text-indigo-200">
@@ -82,8 +110,19 @@ function App() {
         </div>
       </header>
 
-      {/* CONTENT — light panel */}
-      <div className="light-panel flex flex-1 flex-col" style={{ background: '#f8f9fc' }}>
+      {/* BODY */}
+      <div className="light-panel flex flex-1" style={{ background: '#f8f9fc' }}>
+        {/* Chat Sidebar */}
+        {chatConnected && (
+          <ChatSidebar
+            messages={chatMessages}
+            connected={chatConnected}
+            role={chatRole}
+            onSend={sendChat}
+          />
+        )}
+
+        {/* Main content */}
         <div className="flex flex-1 flex-col px-6 py-8 sm:px-10">
           {/* Tab switcher */}
           <div className="inline-flex gap-1.5 self-center rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-black/5">

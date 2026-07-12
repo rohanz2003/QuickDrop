@@ -22,7 +22,7 @@ function formatBytes(bytes) {
   return `${(bytes / 1024 ** power).toFixed(1)} ${units[power]}`;
 }
 
-export default function UploadTab({ clientId }) {
+export default function UploadTab({ clientId, onChannelUpdate }) {
   const [state, setState] = useState(initialState);
   const [qrFormat, setQrFormat] = useState('png');
   const [dragOver, setDragOver] = useState(false);
@@ -69,7 +69,19 @@ export default function UploadTab({ clientId }) {
 
       channel.onopen = () => {
         setState((prev) => ({ ...prev, statusText: 'Connected! Sending file...' }));
+        onChannelUpdate?.({ channel, connected: true, role: 'sender' });
         sendFile(file, channel);
+      };
+
+      channel.onmessage = (e) => {
+        const data = e.data;
+        if (data instanceof ArrayBuffer && data.byteLength >= 8) {
+          const prefix = new TextDecoder().decode(data.slice(0, 8));
+          if (prefix === '__CHAT__') {
+            const chatData = JSON.parse(new TextDecoder().decode(data.slice(8)));
+            onChannelUpdate?.({ chatMessage: { ...chatData, from: 'peer' } });
+          }
+        }
       };
 
       channel.onerror = () => {
@@ -135,8 +147,12 @@ export default function UploadTab({ clientId }) {
       };
 
       peer.onconnectionstatechange = () => {
+        if (peer.connectionState === 'connected') {
+          onChannelUpdate?.({ connected: true });
+        }
         if (peer.connectionState === 'disconnected' || peer.connectionState === 'failed') {
           setState((prev) => ({ ...prev, error: 'Peer disconnected', uploading: false }));
+          onChannelUpdate?.({ connected: false });
         }
       };
     } catch (err) {
