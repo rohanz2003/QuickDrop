@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { addLocalHistoryEvent } from '../utils/historyStorage.js';
 import { apiUrl } from '../utils/api.js';
-import { createOfferRoom, storeOffer, fetchAnswer, sendIceCandidate, startPolling, RTC_CONFIG, CHUNK_SIZE } from '../utils/signaling.js';
+import { createOfferRoom, RTC_CONFIG, CHUNK_SIZE, SIGNALING_WS_URL } from '../utils/signaling.js';
 
 const initialState = {
   file: null,
@@ -30,11 +30,11 @@ export default function UploadTab({ clientId, mode }) {
   const channelRef = useRef(null);
   const roomIdRef = useRef(null);
   const xhrRef = useRef(null);
-  const stopPollRef = useRef(null);
+  const wsRef = useRef(null);
 
   useEffect(() => {
     return () => {
-      stopPollRef.current?.();
+      wsRef.current?.close();
       peerRef.current?.close();
     };
   }, []);
@@ -58,7 +58,7 @@ export default function UploadTab({ clientId, mode }) {
       const roomId = await createOfferRoom(clientId, file.name, file.size, file.type);
       roomIdRef.current = roomId;
 
-      const qrUrl = `${window.location.origin}/receive?room=${roomId}`;
+      const qrUrl = `${window.location.origin}?room=${roomId}`;
       const qrSvg = await QRCode.toString(qrUrl, { type: 'svg', margin: 1, color: { dark: '#00FFFF', light: '#0A192F' } });
       setState((prev) => ({ ...prev, qrSvg, qrData: qrUrl, statusText: 'Waiting for receiver to scan...' }));
 
@@ -77,55 +77,78 @@ export default function UploadTab({ clientId, mode }) {
         setState((prev) => ({ ...prev, error: 'Connection lost', uploading: false }));
       };
 
-      peer.onicecandidate = (e) => {
-        if (e.candidate) {
-          sendIceCandidate(roomId, e.candidate.toJSON(), 'answerer');
-        }
-      };
-
-      peer.oniceconnectionstatechange = () => {
-        const s = peer.iceConnectionState;
-        if (s === 'checking') setState((prev) => ({ ...prev, statusText: 'Checking connection...' }));
-        else if (s === 'connected') setState((prev) => ({ ...prev, statusText: 'Connected! Sending file...' }));
-        else if (s === 'completed') setState((prev) => ({ ...prev, statusText: 'Connected! Sending file...' }));
-        else if (s === 'failed') setState((prev) => ({ ...prev, error: 'Connection failed — NAT/firewall may be blocking. Try Server mode or set VITE_TURN_URL.', uploading: false }));
-        else if (s === 'disconnected') setState((prev) => ({ ...prev, statusText: 'Connection unstable...' }));
-      };
-
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
 
-      await storeOffer(roomId, peer.localDescription);
-      setState((prev) => ({ ...prev, statusText: 'Waiting for receiver...' }));
-
+      const ws = new WebSocket(SIGNALING_WS_URL);
+      wsRef.current = ws;
       const pendingCandidates = [];
-      stopPollRef.current = startPolling(roomId, 'offerer', {
-        onAnswer: async (answer) => {
-          try {
-            await peer.setRemoteDescription(new RTCSessionDescription(answer));
-            while (pendingCandidates.length) {
-              peer.addIceCandidate(new RTCIceCandidate(pendingCandidates.shift()));
-            }
-          } catch (e) {
-            setState((prev) => ({ ...prev, error: 'Connection failed', uploading: false }));
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({
+          type: 'register-offer',
+          payload: { roomId, offer: peer.localDescription }
+        }));
+      };
+
+      ws.onmessage = (event) => {
+        let msg;
+        try { msg = JSON.parse(event.data); } catch { return; }
+
+        if (msg.type === 'signal') {
+          const payload = msg.payload;
+          if (payload.answer && !peer.remoteDescription) {
+            peer.setRemoteDescription(new RTCSessionDescription(payload.answer))
+              .then(() => {
+                while (pendingCandidates.length) {
+                  peer.addIceCandidate(new RTCIceCandidate(pendingCandidates.shift()));
+                }
+              })
+              .catch(() => {
+                setState((prev) => ({ ...prev, error: 'Connection failed', uploading: false }));
+              });
           }
-        },
-        onMessage: (msg) => {
-          if (msg.candidate) {
+          if (payload.candidate) {
             if (peer.remoteDescription) {
-              peer.addIceCandidate(new RTCIceCandidate(msg.candidate));
+              peer.addIceCandidate(new RTCIceCandidate(payload.candidate));
             } else {
-              pendingCandidates.push(msg.candidate);
+              pendingCandidates.push(payload.candidate);
             }
           }
         }
-      });
+
+        if (msg.type === 'error') {
+          setState((prev) => ({ ...prev, error: msg.payload.message, uploading: false }));
+        }
+      };
+
+      ws.onerror = () => {
+        setState((prev) => ({ ...prev, error: 'Signaling connection failed', uploading: false }));
+      };
+
+      peer.onicecandidate = (e) => {
+        if (e.candidate && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'signal',
+            payload: { roomId, candidate: e.candidate.toJSON() }
+          }));
+        }
+      };
+
+      peer.onconnectionstatechange = () => {
+        if (peer.connectionState === 'disconnected' || peer.connectionState === 'failed') {
+          setState((prev) => ({ ...prev, error: 'Peer disconnected', uploading: false }));
+        }
+      };
     } catch (err) {
       setState((prev) => ({ ...prev, uploading: false, error: err.message }));
     }
   };
 
   const sendFile = (file, channel) => {
+    const meta = JSON.stringify({ fileName: file.name, fileSize: file.size, mimeType: file.type });
+    channel.send('__META__' + meta);
+
     const reader = new FileReader();
     let offset = 0;
     const fileSize = file.size;
@@ -142,6 +165,7 @@ export default function UploadTab({ clientId, mode }) {
       if (offset < fileSize) {
         readSlice(offset);
       } else {
+        channel.send('__END__');
         setState((prev) => ({ ...prev, uploading: false, progress: 100, statusText: 'Complete!' }));
         addLocalHistoryEvent(clientId, {
           clientId,
@@ -303,11 +327,12 @@ export default function UploadTab({ clientId, mode }) {
   }, []);
 
   const cancelTransfer = () => {
-    stopPollRef.current?.();
+    wsRef.current?.close();
     xhrRef.current?.abort();
     channelRef.current?.close();
     peerRef.current?.close();
     xhrRef.current = null;
+    wsRef.current = null;
     channelRef.current = null;
     peerRef.current = null;
     roomIdRef.current = null;

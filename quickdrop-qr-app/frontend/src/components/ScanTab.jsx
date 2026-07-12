@@ -3,7 +3,7 @@ import jsQR from 'jsqr';
 import { Html5Qrcode } from 'html5-qrcode';
 import { addLocalHistoryEvent } from '../utils/historyStorage.js';
 import { apiUrl, downloadUrl } from '../utils/api.js';
-import { fetchOffer, storeAnswer, sendIceCandidate, startPolling, RTC_CONFIG, CHUNK_SIZE } from '../utils/signaling.js';
+import { RTC_CONFIG, SIGNALING_WS_URL } from '../utils/signaling.js';
 
 function formatBytes(bytes) {
   if (!bytes) return '0 B';
@@ -35,7 +35,7 @@ export default function ScanTab({ clientId, mode, pendingRoom }) {
 
   useEffect(() => {
     return () => {
-      stopPollRef.current?.();
+      wsRef.current?.close();
       if (scannerRef.current) {
         scannerRef.current.stop().then(() => scannerRef.current.clear()).catch(() => {});
       }
@@ -70,22 +70,69 @@ export default function ScanTab({ clientId, mode, pendingRoom }) {
 
   const peerRef = useRef(null);
   const channelRef = useRef(null);
-  const stopPollRef = useRef(null);
+  const wsRef = useRef(null);
   const receiveBufferRef = useRef([]);
   const receivedSizeRef = useRef(0);
   const fileMetaRef = useRef(null);
 
-  const setupPeer = async (roomId, offer, metadata) => {
-    setP2pStatus('Peer found! Establishing connection...');
-    fileMetaRef.current = metadata;
+  const startP2PDownload = useCallback(async (roomId) => {
+    setP2pStatus('Connecting...');
+    setP2pProgress(0);
 
     const peer = new RTCPeerConnection(RTC_CONFIG);
     peerRef.current = peer;
 
+    const ws = new WebSocket(SIGNALING_WS_URL);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: 'join-offer', payload: { roomId } }));
+    };
+
+    ws.onmessage = async (event) => {
+      let msg;
+      try { msg = JSON.parse(event.data); } catch { return; }
+
+      if (msg.type === 'offer') {
+        const { offer, metadata } = msg.payload;
+        fileMetaRef.current = metadata;
+        setP2pStatus('Peer found! Establishing connection...');
+
+        try {
+          await peer.setRemoteDescription(new RTCSessionDescription(offer));
+          const answer = await peer.createAnswer();
+          await peer.setLocalDescription(answer);
+          ws.send(JSON.stringify({
+            type: 'signal',
+            payload: { roomId, answer: peer.localDescription }
+          }));
+        } catch (err) {
+          setError('Connection setup failed: ' + err.message);
+          setP2pStatus('');
+        }
+      }
+
+      if (msg.type === 'signal') {
+        const { candidate } = msg.payload;
+        if (candidate) {
+          try { await peer.addIceCandidate(new RTCIceCandidate(candidate)); } catch { }
+        }
+      }
+
+      if (msg.type === 'error') {
+        setError(msg.payload.message);
+        setP2pStatus('');
+      }
+    };
+
+    ws.onerror = () => {
+      setError('Signaling connection failed');
+      setP2pStatus('');
+    };
+
     peer.ondatachannel = (event) => {
       const channel = event.channel;
       channelRef.current = channel;
-
       channel.binaryType = 'arraybuffer';
 
       channel.onopen = () => {
@@ -140,49 +187,15 @@ export default function ScanTab({ clientId, mode, pendingRoom }) {
       };
     };
 
-    peer.oniceconnectionstatechange = () => {
-      const s = peer.iceConnectionState;
-      if (s === 'checking') setP2pStatus('Checking connection...');
-      else if (s === 'connected') setP2pStatus('Downloading file...');
-      else if (s === 'failed') {
-        setError('Connection failed — NAT/firewall may be blocking. Try Server mode or set VITE_TURN_URL.');
-        setP2pStatus('');
-      }
-    };
-
     peer.onicecandidate = (e) => {
-      if (e.candidate) {
-        sendIceCandidate(roomId, e.candidate.toJSON(), 'offerer');
+      if (e.candidate && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'signal',
+          payload: { roomId, candidate: e.candidate.toJSON() }
+        }));
       }
     };
-
-    await peer.setRemoteDescription(new RTCSessionDescription(offer));
-    const answer = await peer.createAnswer();
-    await peer.setLocalDescription(answer);
-    await storeAnswer(roomId, peer.localDescription);
-
-    stopPollRef.current = startPolling(roomId, 'answerer', {
-      onMessage: (msg) => {
-        if (msg.candidate) {
-          peer.addIceCandidate(new RTCIceCandidate(msg.candidate));
-        }
-      }
-    });
-  };
-
-  const startP2PDownload = useCallback(async (roomId) => {
-    setP2pStatus('Connecting to peer...');
-    setP2pProgress(0);
-
-    try {
-      const data = await fetchOffer(roomId);
-      setP2pStatus('Joining room...');
-      await setupPeer(roomId, data.offer, data.metadata);
-    } catch (err) {
-      setError('Failed to connect: ' + err.message);
-      setP2pStatus('');
-    }
-  }, []);
+  }, [clientId]);
 
   const handleFile = (file) => {
     setError('');
