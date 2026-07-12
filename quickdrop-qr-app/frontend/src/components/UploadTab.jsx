@@ -146,7 +146,7 @@ export default function UploadTab({ clientId }) {
 
   const sendFile = (file, channel) => {
     const meta = JSON.stringify({ fileName: file.name, fileSize: file.size, mimeType: file.type });
-    channel.send('__META__' + meta);
+    channel.send(new TextEncoder().encode('__META__' + meta));
 
     const fileSize = file.size;
     let offset = 0;
@@ -165,7 +165,7 @@ export default function UploadTab({ clientId }) {
 
       if (offset >= fileSize) {
         channel.onbufferedamountlow = null;
-        channel.send('__END__');
+        channel.send(new TextEncoder().encode('__END__'));
         setState((prev) => ({ ...prev, uploading: false, progress: 100, statusText: 'Complete!' }));
         addLocalHistoryEvent(clientId, {
           clientId,
