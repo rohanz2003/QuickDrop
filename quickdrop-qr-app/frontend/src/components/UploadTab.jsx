@@ -165,6 +165,7 @@ export default function UploadTab({ clientId }) {
       }
 
       if (offset >= fileSize) {
+        channel.onbufferedamountlow = null;
         channel.send('__END__');
         setState((prev) => ({ ...prev, uploading: false, progress: 100, statusText: 'Complete!' }));
         addLocalHistoryEvent(clientId, {

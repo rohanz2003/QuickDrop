@@ -11,11 +11,12 @@ function formatBytes(bytes) {
 
 export default function ScanTab({ clientId, pendingRoom }) {
   const [roomCode, setRoomCode] = useState('');
-  const [filePreview, setFilePreview] = useState(null);
   const [error, setError] = useState('');
   const [p2pStatus, setP2pStatus] = useState('');
   const [p2pProgress, setP2pProgress] = useState(0);
   const [p2pResult, setP2pResult] = useState(null);
+  const [viewDetails, setViewDetails] = useState(null);
+  const blobRef = useRef(null);
 
   useEffect(() => {
     if (pendingRoom) {
@@ -114,7 +115,7 @@ export default function ScanTab({ clientId, pendingRoom }) {
           }
           if (data === '__END__') {
             const blob = new Blob(receiveBufferRef.current);
-            const url = URL.createObjectURL(blob);
+            blobRef.current = blob;
             const meta = fileMetaRef.current;
 
             addLocalHistoryEvent(clientId, {
@@ -127,7 +128,7 @@ export default function ScanTab({ clientId, pendingRoom }) {
               timestamp: new Date().toISOString()
             });
 
-            setP2pResult({ blobUrl: url, ...meta });
+            setP2pResult({ ...meta });
             setP2pStatus('Download ready!');
             setP2pProgress(100);
             return;
@@ -171,13 +172,24 @@ export default function ScanTab({ clientId, pendingRoom }) {
   };
 
   const downloadP2PFile = () => {
-    if (!p2pResult?.blobUrl) return;
+    const blob = blobRef.current;
+    if (!blob || !p2pResult) return;
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = p2pResult.blobUrl;
+    link.href = url;
     link.download = p2pResult.fileName || 'download';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  };
+
+  const handleRemoveP2P = () => {
+    blobRef.current = null;
+    setP2pResult(null);
+    setP2pStatus('');
+    setP2pProgress(0);
+    setRoomCode('');
   };
 
 
@@ -221,22 +233,7 @@ export default function ScanTab({ clientId, pendingRoom }) {
         <div className="mt-8 rounded-[2rem] border border-onsurface/10 bg-surface-low/90 p-6 shadow-sm">
           <p className="text-sm uppercase tracking-[0.25em] text-primary/70">File preview</p>
           <div className="mt-4 rounded-[1.5rem] border border-onsurface/5 bg-background/80 p-5 min-h-[200px]">
-            {filePreview ? (
-              <div className="space-y-3 animate-fade-in">
-                <p className="text-sm text-onsurface/70">File name</p>
-                <p className="text-base font-semibold text-onsurface break-all">{filePreview.originalName}</p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <p className="text-sm text-onsurface/70">Size</p>
-                    <p className="text-base font-semibold text-onsurface">{formatBytes(filePreview.sizeBytes)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-onsurface/70">Type</p>
-                    <p className="text-base font-semibold text-onsurface break-all">{filePreview.mimeType}</p>
-                  </div>
-                </div>
-              </div>
-            ) : p2pResult ? (
+            {p2pResult ? (
               <div className="space-y-3 animate-fade-in">
                 <p className="text-sm text-onsurface/70">File received!</p>
                 <p className="text-base font-semibold text-onsurface break-all">{p2pResult.fileName || 'Unknown file'}</p>
@@ -250,13 +247,36 @@ export default function ScanTab({ clientId, pendingRoom }) {
                     <p className="text-base font-semibold text-onsurface break-all">{p2pResult.mimeType || 'application/octet-stream'}</p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={downloadP2PFile}
-                  className="mt-2 inline-flex w-full items-center justify-center rounded-3xl bg-gradient-to-r from-primary to-accent px-5 py-4 text-sm font-semibold text-background transition-all duration-300 hover:shadow-glow"
-                >
-                  Download file
-                </button>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setViewDetails(p2pResult)}
+                    className="rounded-xl border border-onsurface/10 bg-onsurface/5 px-3 py-2 text-onsurface/60 transition-all duration-300 hover:border-primary/30 hover:text-primary hover:bg-primary/10"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={downloadP2PFile}
+                    className="rounded-xl bg-gradient-to-r from-primary to-accent px-3 py-2 text-white shadow-sm transition-all duration-300 hover:shadow-md"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemoveP2P}
+                    className="rounded-xl border border-onsurface/10 bg-onsurface/5 px-3 py-2 text-onsurface/60 transition-all duration-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             ) : p2pStatus ? (
               <div className="space-y-3 animate-fade-in">
@@ -292,6 +312,41 @@ export default function ScanTab({ clientId, pendingRoom }) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           {error}
+        </div>
+      )}
+
+      {viewDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in" onClick={() => setViewDetails(null)}>
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl ring-1 ring-black/5 animate-slide-up" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary/70">File Details</p>
+              <button onClick={() => setViewDetails(null)} className="rounded-xl p-1.5 text-onsurface-variant hover:bg-onsurface/10">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="mt-5 space-y-4">
+              <div>
+                <p className="text-xs text-onsurface-variant uppercase tracking-wider">Name</p>
+                <p className="mt-1 font-semibold text-onsurface break-all">{viewDetails.fileName}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-onsurface-variant uppercase tracking-wider">Size</p>
+                  <p className="mt-1 font-semibold text-onsurface">{formatBytes(viewDetails.fileSize)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-onsurface-variant uppercase tracking-wider">Type</p>
+                  <p className="mt-1 font-semibold text-onsurface break-all">{viewDetails.mimeType || 'Unknown'}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-onsurface-variant uppercase tracking-wider">Date &amp; Time</p>
+                <p className="mt-1 font-semibold text-onsurface">{new Date().toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
