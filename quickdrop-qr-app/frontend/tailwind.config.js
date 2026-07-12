@@ -7,17 +7,17 @@ export default {
         surface: '#1a1a1a',
         'surface-low': '#141414',
         'surface-high': '#2a2a2a',
-        primary: '#4F46E5',
-        secondary: '#6366F1',
-        accent: '#818CF8',
+        primary: 'var(--qd-primary)',
+        secondary: 'var(--qd-secondary)',
+        accent: 'var(--qd-accent)',
         onsurface: '#F5F5F5',
         'error': '#EF4444',
         'success': '#22C55E'
       },
       boxShadow: {
-        glow: '0 0 30px rgba(79, 70, 229, 0.25)',
-        'glow-lg': '0 0 60px rgba(79, 70, 229, 0.15)',
-        'glow-sm': '0 0 15px rgba(79, 70, 229, 0.15)'
+        glow: '0 0 30px rgba(var(--qd-primary-rgb), 0.25)',
+        'glow-lg': '0 0 60px rgba(var(--qd-primary-rgb), 0.15)',
+        'glow-sm': '0 0 15px rgba(var(--qd-primary-rgb), 0.15)'
       },
       animation: {
         'scan-line': 'scanLine 2s ease-in-out infinite',

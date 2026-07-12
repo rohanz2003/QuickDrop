@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+
+const QD_THEMES = ['default', 'ocean', 'lime', 'fuchsia', 'amber'];
+
+
 import UploadTab from './components/UploadTab.jsx';
 import ScanTab from './components/ScanTab.jsx';
 import HistoryTab from './components/HistoryTab.jsx';
@@ -29,6 +33,32 @@ function App() {
   const [activeTab, setActiveTab] = useState('Upload');
   const [mode, setMode] = useState('Server');
   const [pendingRoom, setPendingRoom] = useState(null);
+
+  const themes = [
+    { key: 'default', label: 'Blue' },
+    { key: 'ocean', label: 'Ocean' },
+    { key: 'lime', label: 'Lime' },
+    { key: 'fuchsia', label: 'Fuchsia' },
+    { key: 'amber', label: 'Amber' }
+  ];
+
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('quickdropTheme');
+    if (!saved) return 'default';
+    return QD_THEMES.includes(saved) ? saved : 'default';
+  });
+
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'default') {
+      root.removeAttribute('data-theme');
+    } else {
+      root.setAttribute('data-theme', theme);
+    }
+    localStorage.setItem('quickdropTheme', theme);
+  }, [theme]);
+
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -76,6 +106,27 @@ function App() {
                 <span className="font-semibold text-onsurface text-xs">Device ID</span>
                 <div className="mt-1 font-mono text-[11px] text-primary/80 break-all">{clientId || 'Generating...'}</div>
               </div>
+
+              <div className="space-y-2">
+                <span className="font-semibold text-onsurface text-xs">Theme</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {themes.map((t) => (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => setTheme(t.key)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 ${
+                        theme === t.key
+                          ? 'bg-gradient-to-r from-primary to-accent text-background shadow-glow-sm'
+                          : 'text-onsurface/60 hover:text-onsurface hover:bg-white/5'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="inline-flex gap-1 rounded-xl bg-surface/60 p-1">
                 {modes.map((option) => (
                   <button
@@ -92,6 +143,7 @@ function App() {
                 ))}
               </div>
             </div>
+
           </div>
         </header>
 
@@ -117,12 +169,25 @@ function App() {
         <div className="rounded-[2rem] border border-white/10 bg-gradient-to-br from-surface/90 via-surface/70 to-surface-low/90 p-5 shadow-glow sm:p-8">
           {tabsContent && (
             <>
-              <div className={activeTab === 'Upload' ? 'block' : 'hidden'}>{tabsContent.Upload}</div>
-              <div className={activeTab === 'Scan' ? 'block' : 'hidden'}>{tabsContent.Scan}</div>
-              <div className={activeTab === 'History' ? 'block' : 'hidden'}>{tabsContent.History}</div>
+              <div
+                className={activeTab === 'Upload' ? 'block' : 'hidden'}
+              >
+                <div className="animate-slide-up motion-reduce:animate-none">{tabsContent.Upload}</div>
+              </div>
+              <div
+                className={activeTab === 'Scan' ? 'block' : 'hidden'}
+              >
+                <div className="animate-slide-up motion-reduce:animate-none">{tabsContent.Scan}</div>
+              </div>
+              <div
+                className={activeTab === 'History' ? 'block' : 'hidden'}
+              >
+                <div className="animate-slide-up motion-reduce:animate-none">{tabsContent.History}</div>
+              </div>
             </>
           )}
         </div>
+
 
         <footer className="mt-8 text-center text-xs text-onsurface/30">
           QuickDrop QR &mdash; Files are transferred {mode === 'P2P' ? 'directly between devices' : 'via server'}. No login required.
