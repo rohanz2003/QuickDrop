@@ -114,9 +114,23 @@ export default function ScanTab({ clientId, pendingRoom }) {
             return;
           }
           if (data === '__END__') {
-            const blob = new Blob(receiveBufferRef.current);
-            blobRef.current = blob;
             const meta = fileMetaRef.current;
+            const expected = meta?.fileSize || 0;
+            const received = receivedSizeRef.current;
+
+            if (expected > 0 && received !== expected) {
+              setP2pStatus(`Waiting for remaining data (${formatBytes(received)} / ${formatBytes(expected)})...`);
+              return;
+            }
+
+            const buf = new Uint8Array(received);
+            let pos = 0;
+            for (const chunk of receiveBufferRef.current) {
+              buf.set(new Uint8Array(chunk), pos);
+              pos += chunk.byteLength;
+            }
+            const blob = new Blob([buf]);
+            blobRef.current = blob;
 
             addLocalHistoryEvent(clientId, {
               clientId,
