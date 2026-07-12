@@ -7,7 +7,7 @@ export const RTC_CONFIG = {
   ]
 };
 
-export const CHUNK_SIZE = 16384;
+export const CHUNK_SIZE = 262144;
 
 const wsBase = import.meta.env.VITE_SIGNALING_URL;
 export const SIGNALING_WS_URL = wsBase || (API_BASE ? API_BASE.replace(/^http/, 'ws') + '/ws' : '/ws');

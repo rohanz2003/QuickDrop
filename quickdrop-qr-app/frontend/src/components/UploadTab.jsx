@@ -148,22 +148,23 @@ export default function UploadTab({ clientId }) {
     const meta = JSON.stringify({ fileName: file.name, fileSize: file.size, mimeType: file.type });
     channel.send('__META__' + meta);
 
-    const reader = new FileReader();
-    let offset = 0;
     const fileSize = file.size;
+    let offset = 0;
+    const reader = new FileReader();
 
-    reader.onload = () => {
-      const chunk = reader.result;
-      if (channel.readyState === 'open') {
-        channel.send(chunk);
-        offset += chunk.byteLength;
+    const sendNext = () => {
+      if (channel.readyState !== 'open') return;
+
+      while (offset < fileSize && channel.bufferedAmount < 1048576) {
+        const end = Math.min(offset + CHUNK_SIZE, fileSize);
+        const slice = file.slice(offset, end);
+        offset = end;
+        channel.send(slice);
         const pct = Math.round((offset / fileSize) * 100);
         setState((prev) => ({ ...prev, progress: pct, statusText: `Sending ${pct}%` }));
       }
 
-      if (offset < fileSize) {
-        readSlice(offset);
-      } else {
+      if (offset >= fileSize) {
         channel.send('__END__');
         setState((prev) => ({ ...prev, uploading: false, progress: 100, statusText: 'Complete!' }));
         addLocalHistoryEvent(clientId, {
@@ -175,19 +176,14 @@ export default function UploadTab({ clientId }) {
           mimeType: file.type,
           timestamp: new Date().toISOString()
         });
+        return;
       }
+
+      channel.onbufferedamountlow = sendNext;
     };
 
-    reader.onerror = () => {
-      setState((prev) => ({ ...prev, error: 'Failed to read file', uploading: false }));
-    };
-
-    const readSlice = (start) => {
-      const slice = file.slice(start, start + CHUNK_SIZE);
-      reader.readAsArrayBuffer(slice);
-    };
-
-    readSlice(0);
+    channel.bufferedAmountLowThreshold = 262144;
+    sendNext();
   };
 
   const uploadServer = async () => {

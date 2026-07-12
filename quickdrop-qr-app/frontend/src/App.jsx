@@ -57,7 +57,7 @@ function App() {
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-primary/60">No-login file sharing</p>
               <h1 className="mt-1 text-4xl font-extrabold text-onsurface tracking-tight">
-                QuickDrop <span className="text-primary">QR</span>
+                QuickDrop <span className="text-primary"></span>
               </h1>
               <p className="mt-2 max-w-2xl text-sm text-onsurface/60 sm:text-base">
                 Share files directly browser-to-browser with a 4-digit code. No server storage.
@@ -102,7 +102,7 @@ function App() {
         </div>
 
         <footer className="mt-8 text-center text-xs text-onsurface/30">
-          QuickDrop QR &mdash; Files are transferred directly between devices. No login required.
+          QuickDrop &mdash; Files are transferred directly between devices. 
         </footer>
       </div>
     </div>
