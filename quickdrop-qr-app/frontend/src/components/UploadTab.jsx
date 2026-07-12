@@ -59,7 +59,7 @@ export default function UploadTab({ clientId, mode }) {
       roomIdRef.current = roomId;
 
       const qrUrl = `${window.location.origin}?room=${roomId}`;
-      const qrSvg = await QRCode.toString(qrUrl, { type: 'svg', margin: 1, color: { dark: '#00FFFF', light: '#0A192F' } });
+      const qrSvg = await QRCode.toString(qrUrl, { type: 'svg', margin: 1, color: { dark: '#4F46E5', light: '#050505' } });
       setState((prev) => ({ ...prev, qrSvg, qrData: qrUrl, statusText: 'Waiting for receiver to scan...' }));
 
       const peer = new RTCPeerConnection(RTC_CONFIG);
