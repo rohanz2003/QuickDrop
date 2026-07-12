@@ -38,6 +38,41 @@ export default function ScanTab({ clientId, pendingRoom }) {
   const receiveBufferRef = useRef([]);
   const receivedSizeRef = useRef(0);
   const fileMetaRef = useRef(null);
+  const endReceivedRef = useRef(false);
+
+  const tryFinish = () => {
+    const meta = fileMetaRef.current;
+    const expected = meta?.fileSize || 0;
+    const received = receivedSizeRef.current;
+
+    if (!meta || (expected > 0 && received !== expected)) {
+      if (meta) setP2pStatus(`Waiting for remaining data (${formatBytes(received)} / ${formatBytes(expected)})...`);
+      return;
+    }
+
+    const buf = new Uint8Array(received);
+    let pos = 0;
+    for (const chunk of receiveBufferRef.current) {
+      buf.set(new Uint8Array(chunk), pos);
+      pos += chunk.byteLength;
+    }
+    const blob = new Blob([buf]);
+    blobRef.current = blob;
+
+    addLocalHistoryEvent(clientId, {
+      clientId,
+      fileId: 'p2p-' + Date.now(),
+      type: 'download',
+      fileName: meta?.fileName || 'Unknown',
+      fileSize: meta?.fileSize || 0,
+      mimeType: meta?.mimeType || 'application/octet-stream',
+      timestamp: new Date().toISOString()
+    });
+
+    setP2pResult({ ...meta });
+    setP2pStatus('Download ready!');
+    setP2pProgress(100);
+  };
 
   const startP2PDownload = useCallback(async (roomId) => {
     setP2pStatus('Connecting...');
@@ -114,37 +149,7 @@ export default function ScanTab({ clientId, pendingRoom }) {
             return;
           }
           if (data === '__END__') {
-            const meta = fileMetaRef.current;
-            const expected = meta?.fileSize || 0;
-            const received = receivedSizeRef.current;
-
-            if (expected > 0 && received !== expected) {
-              setP2pStatus(`Waiting for remaining data (${formatBytes(received)} / ${formatBytes(expected)})...`);
-              return;
-            }
-
-            const buf = new Uint8Array(received);
-            let pos = 0;
-            for (const chunk of receiveBufferRef.current) {
-              buf.set(new Uint8Array(chunk), pos);
-              pos += chunk.byteLength;
-            }
-            const blob = new Blob([buf]);
-            blobRef.current = blob;
-
-            addLocalHistoryEvent(clientId, {
-              clientId,
-              fileId: 'p2p-' + Date.now(),
-              type: 'download',
-              fileName: meta?.fileName || 'Unknown',
-              fileSize: meta?.fileSize || 0,
-              mimeType: meta?.mimeType || 'application/octet-stream',
-              timestamp: new Date().toISOString()
-            });
-
-            setP2pResult({ ...meta });
-            setP2pStatus('Download ready!');
-            setP2pProgress(100);
+            tryFinish();
             return;
           }
           return;
@@ -156,6 +161,7 @@ export default function ScanTab({ clientId, pendingRoom }) {
           const pct = Math.round((receivedSizeRef.current / fileMetaRef.current.fileSize) * 100);
           setP2pProgress(pct);
           setP2pStatus(`Receiving ${pct}%`);
+          if (pct >= 100) tryFinish();
         }
       };
 
