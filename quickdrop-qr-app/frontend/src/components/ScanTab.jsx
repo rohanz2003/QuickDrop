@@ -50,13 +50,7 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
       return;
     }
 
-    const buf = new Uint8Array(received);
-    let pos = 0;
-    for (const chunk of receiveBufferRef.current) {
-      buf.set(new Uint8Array(chunk), pos);
-      pos += chunk.byteLength;
-    }
-    const blob = new Blob([buf]);
+    const blob = new Blob(receiveBufferRef.current);
     blobRef.current = blob;
 
     addLocalHistoryEvent(clientId, {

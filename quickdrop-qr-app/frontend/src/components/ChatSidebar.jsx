@@ -21,7 +21,7 @@ export default function ChatSidebar({ messages, connected, onSend, role }) {
   };
 
   return (
-    <div className="flex h-full w-72 flex-col border-r border-onsurface/10 bg-white shadow-sm">
+    <div className="flex w-72 flex-col self-stretch border-r border-onsurface/10 bg-white shadow-sm">
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-onsurface/10 px-4 py-3">
         <span className={`h-3 w-3 rounded-full ${connected ? 'bg-green-500 shadow-sm shadow-green-500/50' : 'bg-red-500 shadow-sm shadow-red-500/50'}`} />
@@ -32,7 +32,7 @@ export default function ChatSidebar({ messages, connected, onSend, role }) {
       </div>
 
       {/* Messages */}
-      <div ref={listRef} className="flex-1 space-y-2 overflow-y-auto px-4 py-3">
+      <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-3 min-h-0">
         {messages.length === 0 && (
           <p className="mt-8 text-center text-xs text-[#9ca3af]">No messages yet.</p>
         )}
