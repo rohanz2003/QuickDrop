@@ -141,6 +141,11 @@ export default function ScanTab({ clientId, pendingRoom }) {
       channel.onmessage = (e) => {
         const data = e.data;
 
+        if (data instanceof ArrayBuffer && data.byteLength === 6 && new TextDecoder().decode(data) === '__END__') {
+          tryFinish();
+          return;
+        }
+
         if (data instanceof ArrayBuffer && data.byteLength >= 8) {
           const prefix = new TextDecoder().decode(data.slice(0, 8));
           if (prefix === '__META__') {
@@ -148,10 +153,6 @@ export default function ScanTab({ clientId, pendingRoom }) {
             fileMetaRef.current = meta;
             receiveBufferRef.current = [];
             receivedSizeRef.current = 0;
-            return;
-          }
-          if (data.byteLength === 6 && new TextDecoder().decode(data) === '__END__') {
-            tryFinish();
             return;
           }
         }
