@@ -205,11 +205,20 @@ export default function ScanTab({ clientId, pendingRoom }) {
   };
 
   const handleRemoveP2P = () => {
+    wsRef.current?.close();
+    peerRef.current?.close();
+    wsRef.current = null;
+    peerRef.current = null;
+    channelRef.current = null;
     blobRef.current = null;
+    receiveBufferRef.current = [];
+    receivedSizeRef.current = 0;
+    fileMetaRef.current = null;
     setP2pResult(null);
     setP2pStatus('');
     setP2pProgress(0);
     setRoomCode('');
+    setError('');
   };
 
 
@@ -300,12 +309,26 @@ export default function ScanTab({ clientId, pendingRoom }) {
               </div>
             ) : p2pStatus ? (
               <div className="space-y-3 animate-fade-in">
-                <div className="flex items-center gap-3">
-                  <svg className="w-5 h-5 text-primary animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  <p className="text-sm font-medium text-onsurface">{p2pStatus}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <svg className="w-5 h-5 text-primary animate-spin shrink-0" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    <p className="text-sm font-medium text-onsurface">{p2pStatus}</p>
+                  </div>
+                  {!p2pResult && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveP2P}
+                      className="shrink-0 rounded-xl border border-onsurface/10 bg-onsurface/5 p-1.5 text-onsurface/60 transition-all duration-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30"
+                      title="Cancel"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
                 {p2pProgress > 0 && (
                   <div className="space-y-1">

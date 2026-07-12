@@ -410,8 +410,22 @@ export default function UploadTab({ clientId }) {
           <div className="mt-5 min-h-[180px] rounded-3xl border border-onsurface/5 bg-background/80 p-4">
             {state.file ? (
               <div className="space-y-3 animate-fade-in">
-                <p className="text-sm text-onsurface/70">Selected file</p>
-                <p className="text-base font-semibold text-onsurface break-all">{fileInfo}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-onsurface/70">Selected file</p>
+                    <p className="mt-0.5 text-base font-semibold text-onsurface break-all">{fileInfo}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setState((prev) => ({ ...prev, file: null, error: null, roomCode: null, qrSvg: null, qrData: null }))}
+                    disabled={state.uploading}
+                    className="shrink-0 rounded-xl border border-onsurface/10 bg-onsurface/5 p-1.5 text-onsurface/60 transition-all duration-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 disabled:hidden"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
                 <div className="flex flex-wrap gap-2 text-xs text-onsurface/70">
                   <span className="rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-primary">
                     Direct transfer
@@ -499,8 +513,20 @@ export default function UploadTab({ clientId }) {
         <section className="rounded-[2rem] border border-onsurface/10 bg-surface-low/80 p-6 shadow-sm animate-bounce-in">
           <div className="flex flex-col items-center gap-6">
             <p className="text-sm uppercase tracking-[0.25em] text-primary/70">Share this code with receiver</p>
-            <div className="flex h-32 w-64 items-center justify-center rounded-3xl bg-background border border-primary/30 shadow-glow-lg">
-              <span className="text-6xl font-extrabold tracking-[0.2em] text-primary">{state.roomCode}</span>
+            <div className="relative">
+              <div className="flex h-32 w-64 items-center justify-center rounded-3xl bg-background border border-primary/30 shadow-glow-lg">
+                <span className="text-6xl font-extrabold tracking-[0.2em] text-primary">{state.roomCode}</span>
+              </div>
+              <button
+                type="button"
+                onClick={cancelTransfer}
+                className="absolute -top-2 -right-2 rounded-full border border-onsurface/10 bg-surface-low p-1.5 text-onsurface/60 shadow-sm transition-all duration-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30"
+                title="Generate new code"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
             </div>
             <p className="text-xl font-semibold text-onsurface">Waiting for receiver to connect...</p>
             <div className="flex items-center gap-2 rounded-3xl bg-primary/5 border border-primary/20 px-4 py-3 text-sm text-primary animate-pulse-glow">
