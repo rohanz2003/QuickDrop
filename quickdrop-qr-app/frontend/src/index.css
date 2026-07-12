@@ -4,12 +4,23 @@
 
 :root {
   color-scheme: dark;
-  font-family: 'Inter', system-ui, sans-serif;
-  background-color: #050505;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --color-background: 5 5 5;
+  --color-surface: 26 26 26;
+  --color-surface-low: 20 20 20;
+  --color-surface-high: 42 42 42;
+  --color-primary: 79 70 229;
+  --color-secondary: 99 102 241;
+  --color-accent: 129 140 248;
+  --color-onsurface: 245 245 245;
+  --color-onsurface-variant: 163 163 163;
+  --color-error: 239 68 68;
+  --color-success: 34 197 94;
 }
 
 html, body, #root {
-  min-height: 100%;
+  min-height: 100vh;
 }
 
 body {
@@ -49,6 +60,21 @@ select {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(79, 70, 229, 0.6);
+}
+
+.light-panel {
+  color-scheme: light;
+  --color-background: 255 255 255;
+  --color-surface: 243 244 246;
+  --color-surface-low: 255 255 255;
+  --color-surface-high: 229 231 235;
+  --color-primary: 79 70 229;
+  --color-secondary: 99 102 241;
+  --color-accent: 129 140 248;
+  --color-onsurface: 26 26 46;
+  --color-onsurface-variant: 107 114 128;
+  --color-error: 239 68 68;
+  --color-success: 34 197 94;
 }
 
 .camera-frame {

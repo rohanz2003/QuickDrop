@@ -4,9 +4,27 @@ import ScanTab from './components/ScanTab.jsx';
 import HistoryTab from './components/HistoryTab.jsx';
 
 const tabs = [
-  { key: 'Upload', icon: 'M12 4v16m8-8H4' },
-  { key: 'Receive', icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' },
-  { key: 'History', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' }
+  {
+    key: 'Send',
+    icon: 'M12 4v16m8-8H4'
+  },
+  {
+    key: 'Receive',
+    icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'
+  },
+  {
+    key: 'History',
+    icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'
+  }
+];
+
+const features = [
+  'No signup needed',
+  '4-digit room code',
+  'Direct browser-to-browser',
+  'Fast P2P transfer',
+  'No server storage',
+  'Works on LAN'
 ];
 
 function useClientId() {
@@ -26,7 +44,7 @@ function useClientId() {
 
 function App() {
   const clientId = useClientId();
-  const [activeTab, setActiveTab] = useState('Upload');
+  const [activeTab, setActiveTab] = useState('Send');
   const [pendingRoom, setPendingRoom] = useState(null);
 
   useEffect(() => {
@@ -38,72 +56,101 @@ function App() {
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
+
   const tabsContent = useMemo(() => {
     if (!clientId) return null;
     return {
-      Upload: <UploadTab clientId={clientId} />,
+      Send: <UploadTab clientId={clientId} />,
       Receive: <ScanTab clientId={clientId} pendingRoom={pendingRoom} />,
       History: <HistoryTab clientId={clientId} />
     };
   }, [clientId, pendingRoom]);
 
   return (
-    <div className="min-h-screen bg-background text-onsurface">
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-        <header className="relative mb-6 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-surface/90 via-surface/70 to-surface-low/90 p-5 shadow-glow backdrop-blur-xl">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-primary/60">No-login file sharing</p>
-              <h1 className="mt-1 text-4xl font-extrabold text-onsurface tracking-tight">
-                QuickDrop <span className="text-primary"></span>
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm text-onsurface/60 sm:text-base">
-                Share files directly browser-to-browser with a 4-digit code. No server storage.
-              </p>
-            </div>
-            <div className="flex flex-col gap-3 rounded-2xl bg-background/50 border border-white/5 p-3 text-sm text-onsurface-variant shadow-sm">
-              <div>
-                <span className="font-semibold text-onsurface text-xs">Device ID</span>
-                <div className="mt-1 font-mono text-[11px] text-primary/80 break-all">{clientId || 'Generating...'}</div>
-              </div>
-            </div>
+    <div className="flex min-h-screen bg-background text-onsurface">
+      {/* LEFT PANEL — dark indigo gradient (connect-it inspired) */}
+      <div className="hidden w-[440px] shrink-0 flex-col justify-between bg-gradient-to-br from-[#4338ca] via-[#3730a3] to-[#312e81] p-12 lg:flex">
+        <div>
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#4338ca] to-[#6366f1] shadow-lg shadow-indigo-500/30">
+            <span className="text-2xl font-extrabold text-white">Q</span>
           </div>
-        </header>
 
-        <nav className="mb-6 grid grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-surface-low/80 p-1.5 shadow-sm sm:max-w-md">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-300 ${
-                activeTab === tab.key
-                  ? 'bg-gradient-to-r from-primary to-accent text-background shadow-glow-sm scale-[1.02]'
-                  : 'text-onsurface/60 hover:text-onsurface hover:bg-white/5'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d={tab.icon} />
-              </svg>
-              {tab.key}
-            </button>
-          ))}
-        </nav>
+          <h1 className="mt-10 text-[40px] font-extrabold leading-tight tracking-tight text-white">
+            QuickDrop
+          </h1>
+          <p className="mt-3 max-w-[380px] text-base leading-relaxed text-white/85">
+            Share files directly between devices. No signup, no server storage — just a 4-digit code.
+          </p>
 
-        <div className="rounded-[2rem] border border-white/10 bg-gradient-to-br from-surface/90 via-surface/70 to-surface-low/90 p-5 shadow-glow sm:p-8">
-          {tabsContent && (
-            <>
-              <div className={activeTab === 'Upload' ? 'block' : 'hidden'}>{tabsContent.Upload}</div>
-              <div className={activeTab === 'Receive' ? 'block' : 'hidden'}>{tabsContent.Receive}</div>
-              <div className={activeTab === 'History' ? 'block' : 'hidden'}>{tabsContent.History}</div>
-            </>
-          )}
+          <ul className="mt-10 flex flex-col gap-[18px]">
+            {features.map((f) => (
+              <li key={f} className="flex items-center gap-3 text-[15px] font-medium text-white/95">
+                <svg className="h-5 w-5 shrink-0 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                {f}
+              </li>
+            ))}
+          </ul>
         </div>
 
-        <footer className="mt-8 text-center text-xs text-onsurface/30">
-          QuickDrop &mdash; Files are transferred directly between devices. 
-        </footer>
+        <div className="rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm text-white/80 backdrop-blur">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-white/50">Device ID</p>
+          <p className="mt-1 font-mono text-[13px] break-all text-indigo-200">
+            {clientId || 'Generating...'}
+          </p>
+        </div>
+      </div>
+
+      {/* RIGHT PANEL — light (connect-it style) */}
+      <div className="light-panel flex min-h-screen flex-1 flex-col" style={{ background: '#f8f9fc' }}>
+        <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-10 sm:px-10">
+          {/* Mobile branding (shown on small screens) */}
+          <div className="mb-8 flex items-center gap-3 lg:hidden">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#4338ca] to-[#6366f1] shadow-md shadow-indigo-500/20">
+              <span className="text-lg font-extrabold text-white">Q</span>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-[#1a1a2e]">QuickDrop</p>
+              <p className="text-xs text-[#6b7280]">P2P file sharing</p>
+            </div>
+          </div>
+
+          {/* Tab switcher */}
+          <div className="inline-flex gap-1.5 self-center rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-black/5">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-300 ${
+                  activeTab === tab.key
+                    ? 'bg-gradient-to-r from-[#4338ca] to-[#6366f1] text-white shadow-md'
+                    : 'text-[#6b7280] hover:text-[#1a1a2e]'
+                }`}
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d={tab.icon} />
+                </svg>
+                {tab.key}
+              </button>
+            ))}
+          </div>
+
+          {/* Content */}
+          <div className="mt-8 flex-1">
+            {tabsContent && (
+              <>
+                <div className={activeTab === 'Send' ? 'block' : 'hidden'}>{tabsContent.Send}</div>
+                <div className={activeTab === 'Receive' ? 'block' : 'hidden'}>{tabsContent.Receive}</div>
+                <div className={activeTab === 'History' ? 'block' : 'hidden'}>{tabsContent.History}</div>
+              </>
+            )}
+          </div>
+
+          <footer className="mt-8 text-center text-xs text-[#9ca3af]">
+            QuickDrop &mdash; Files are transferred directly between devices.
+          </footer>
+        </div>
       </div>
     </div>
   );

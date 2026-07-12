@@ -54,7 +54,7 @@ export default function HistoryTab({ clientId }) {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="rounded-[2rem] border border-white/10 bg-surface-low/80 p-6 shadow-sm">
+      <div className="rounded-[2rem] border border-onsurface/10 bg-surface-low/80 p-6 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.25em] text-primary/70">History</p>
@@ -89,7 +89,7 @@ export default function HistoryTab({ clientId }) {
             filteredEvents.map((event, idx) => (
               <div
                 key={`${event._id || event.eventId}-${event.timestamp}`}
-                className="group rounded-[1.5rem] border border-white/10 bg-surface/70 p-5 shadow-sm transition-all duration-300 hover:border-primary/20 hover:shadow-glow-sm animate-fade-in"
+                className="group rounded-[1.5rem] border border-onsurface/10 bg-surface/70 p-5 shadow-sm transition-all duration-300 hover:border-primary/20 hover:shadow-glow-sm animate-fade-in"
                 style={{ animationDelay: `${idx * 50}ms` }}
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -128,7 +128,7 @@ export default function HistoryTab({ clientId }) {
                     <button
                       type="button"
                       onClick={() => handleDelete(event)}
-                      className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-onsurface/60 transition-all duration-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30"
+                      className="rounded-xl border border-onsurface/10 bg-onsurface/5 px-4 py-2 text-sm font-semibold text-onsurface/60 transition-all duration-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30"
                     >
                       Remove
                     </button>

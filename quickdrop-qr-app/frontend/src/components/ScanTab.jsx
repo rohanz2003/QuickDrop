@@ -184,7 +184,7 @@ export default function ScanTab({ clientId, pendingRoom }) {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="rounded-[2rem] border border-white/10 bg-surface-low/80 p-6 shadow-sm">
+      <div className="rounded-[2rem] border border-onsurface/10 bg-surface-low/80 p-6 shadow-sm">
         <div className="flex flex-col items-center gap-6">
             <div className="text-center">
               <p className="text-sm uppercase tracking-[0.35em] text-primary/70">Connect to sender</p>
@@ -202,7 +202,7 @@ export default function ScanTab({ clientId, pendingRoom }) {
                 onChange={(e) => setRoomCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
                 onKeyDown={(e) => e.key === 'Enter' && handleConnect()}
                 placeholder="0000"
-                className="w-48 rounded-2xl border border-white/10 bg-background px-6 py-4 text-center text-4xl font-extrabold tracking-[0.3em] text-primary outline-none focus:border-primary/50 focus:shadow-glow-sm transition-all duration-300"
+                className="w-48 rounded-2xl border border-onsurface/10 bg-background px-6 py-4 text-center text-4xl font-extrabold tracking-[0.3em] text-primary outline-none focus:border-primary/50 focus:shadow-glow-sm transition-all duration-300"
                 disabled={!!p2pStatus || !!p2pResult}
                 inputMode="numeric"
                 autoFocus
@@ -218,9 +218,9 @@ export default function ScanTab({ clientId, pendingRoom }) {
             </div>
           </div>
 
-        <div className="mt-8 rounded-[2rem] border border-white/10 bg-surface-low/90 p-6 shadow-sm">
+        <div className="mt-8 rounded-[2rem] border border-onsurface/10 bg-surface-low/90 p-6 shadow-sm">
           <p className="text-sm uppercase tracking-[0.25em] text-primary/70">File preview</p>
-          <div className="mt-4 rounded-[1.5rem] border border-white/5 bg-background/80 p-5 min-h-[200px]">
+          <div className="mt-4 rounded-[1.5rem] border border-onsurface/5 bg-background/80 p-5 min-h-[200px]">
             {filePreview ? (
               <div className="space-y-3 animate-fade-in">
                 <p className="text-sm text-onsurface/70">File name</p>
@@ -269,7 +269,7 @@ export default function ScanTab({ clientId, pendingRoom }) {
                 </div>
                 {p2pProgress > 0 && (
                   <div className="space-y-1">
-                    <div className="h-2 overflow-hidden rounded-full bg-white/5">
+                    <div className="h-2 overflow-hidden rounded-full bg-onsurface/5">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
                         style={{ width: `${p2pProgress}%` }}

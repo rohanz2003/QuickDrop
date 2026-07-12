@@ -3,16 +3,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#050505',
-        surface: '#1a1a1a',
-        'surface-low': '#141414',
-        'surface-high': '#2a2a2a',
-        primary: '#4F46E5',
-        secondary: '#6366F1',
-        accent: '#818CF8',
-        onsurface: '#F5F5F5',
-        'error': '#EF4444',
-        'success': '#22C55E'
+        background: 'rgb(var(--color-background) / <alpha-value>)',
+        surface: 'rgb(var(--color-surface) / <alpha-value>)',
+        'surface-low': 'rgb(var(--color-surface-low) / <alpha-value>)',
+        'surface-high': 'rgb(var(--color-surface-high) / <alpha-value>)',
+        primary: 'rgb(var(--color-primary) / <alpha-value>)',
+        secondary: 'rgb(var(--color-secondary) / <alpha-value>)',
+        accent: 'rgb(var(--color-accent) / <alpha-value>)',
+        onsurface: 'rgb(var(--color-onsurface) / <alpha-value>)',
+        'onsurface-variant': 'rgb(var(--color-onsurface-variant) / <alpha-value>)',
+        error: 'rgb(var(--color-error) / <alpha-value>)',
+        success: 'rgb(var(--color-success) / <alpha-value>)'
       },
       boxShadow: {
         glow: '0 0 30px rgba(79, 70, 229, 0.25)',

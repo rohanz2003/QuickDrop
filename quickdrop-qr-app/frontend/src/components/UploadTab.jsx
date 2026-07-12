@@ -339,7 +339,7 @@ export default function UploadTab({ clientId }) {
       <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
         <div
           className={`relative rounded-[2rem] border bg-surface-low/80 p-6 shadow-sm transition-all duration-300 ${
-            dragOver ? 'border-primary shadow-glow-lg scale-[1.01]' : 'border-white/10'
+            dragOver ? 'border-primary shadow-glow-lg scale-[1.01]' : 'border-onsurface/10'
           }`}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
@@ -378,7 +378,7 @@ export default function UploadTab({ clientId }) {
               onChange={(event) => event.target.files?.[0] && handleFile(event.target.files[0])}
             />
 
-            <div className="rounded-3xl border border-white/5 bg-surface/50 p-4 text-sm text-onsurface-variant">
+            <div className="rounded-3xl border border-onsurface/5 bg-surface/50 p-4 text-sm text-onsurface-variant">
               <p className="font-semibold text-onsurface flex items-center gap-2">
                 <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -392,9 +392,9 @@ export default function UploadTab({ clientId }) {
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-white/10 bg-surface-low/80 p-6 shadow-sm">
+        <div className="rounded-[2rem] border border-onsurface/10 bg-surface-low/80 p-6 shadow-sm">
           <p className="text-sm uppercase tracking-[0.25em] text-primary/70">Preview</p>
-          <div className="mt-5 min-h-[180px] rounded-3xl border border-white/5 bg-background/80 p-4">
+          <div className="mt-5 min-h-[180px] rounded-3xl border border-onsurface/5 bg-background/80 p-4">
             {state.file ? (
               <div className="space-y-3 animate-fade-in">
                 <p className="text-sm text-onsurface/70">Selected file</p>
@@ -403,7 +403,7 @@ export default function UploadTab({ clientId }) {
                   <span className="rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-primary">
                     Direct transfer
                   </span>
-                  <span className="rounded-full bg-white/5 px-3 py-1">
+                  <span className="rounded-full bg-onsurface/5 px-3 py-1">
                     Real-time
                   </span>
                 </div>
@@ -420,7 +420,7 @@ export default function UploadTab({ clientId }) {
         </div>
       </div>
 
-      <div className="rounded-[2rem] border border-white/10 bg-surface/80 p-6 shadow-sm">
+      <div className="rounded-[2rem] border border-onsurface/10 bg-surface/80 p-6 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.25em] text-primary/70">Upload action</p>
@@ -462,7 +462,7 @@ export default function UploadTab({ clientId }) {
         <div className="mt-5 space-y-3">
           {state.uploading || state.progress > 0 ? (
             <div className="space-y-2">
-              <div className="h-3 overflow-hidden rounded-full bg-white/5">
+              <div className="h-3 overflow-hidden rounded-full bg-onsurface/5">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
                   style={{ width: `${state.progress}%` }}
@@ -483,7 +483,7 @@ export default function UploadTab({ clientId }) {
       </div>
 
       {state.roomCode && (
-        <section className="rounded-[2rem] border border-white/10 bg-surface-low/80 p-6 shadow-sm animate-bounce-in">
+        <section className="rounded-[2rem] border border-onsurface/10 bg-surface-low/80 p-6 shadow-sm animate-bounce-in">
           <div className="flex flex-col items-center gap-6">
             <p className="text-sm uppercase tracking-[0.25em] text-primary/70">Share this code with receiver</p>
             <div className="flex h-32 w-64 items-center justify-center rounded-3xl bg-background border border-primary/30 shadow-glow-lg">
@@ -499,9 +499,9 @@ export default function UploadTab({ clientId }) {
       )}
 
       {state.qrSvg && (
-        <section className="rounded-[2rem] border border-white/10 bg-surface-low/80 p-6 shadow-sm animate-bounce-in">
+        <section className="rounded-[2rem] border border-onsurface/10 bg-surface-low/80 p-6 shadow-sm animate-bounce-in">
           <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-            <div className="rounded-3xl border border-white/10 bg-background/80 p-6">
+            <div className="rounded-3xl border border-onsurface/10 bg-background/80 p-6">
               <div className="mx-auto flex h-[260px] w-[260px] items-center justify-center rounded-3xl bg-white p-4 shadow-glow-lg">
                 <div
                   className="w-full h-full"
@@ -513,7 +513,7 @@ export default function UploadTab({ clientId }) {
             <div className="space-y-4">
               <p className="text-sm uppercase tracking-[0.25em] text-primary/70">QR ready</p>
               <p className="text-xl font-semibold text-onsurface">Scan this QR to download your file</p>
-              <div className="rounded-3xl border border-white/5 bg-surface/80 p-4 text-sm text-onsurface-variant">
+              <div className="rounded-3xl border border-onsurface/5 bg-surface/80 p-4 text-sm text-onsurface-variant">
                 <p className="font-semibold text-onsurface flex items-center gap-2">
                   <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -533,7 +533,7 @@ export default function UploadTab({ clientId }) {
                 <button
                   type="button"
                   onClick={downloadQrImage}
-                  className="rounded-3xl border border-white/10 bg-surface px-5 py-3 text-sm font-semibold text-onsurface transition-all duration-300 hover:bg-surface-high hover:shadow-glow-sm"
+                  className="rounded-3xl border border-onsurface/10 bg-surface px-5 py-3 text-sm font-semibold text-onsurface transition-all duration-300 hover:bg-surface-high hover:shadow-glow-sm"
                 >
                   Download QR
                 </button>
