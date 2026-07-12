@@ -27,7 +27,6 @@ function useClientId() {
 function App() {
   const clientId = useClientId();
   const [activeTab, setActiveTab] = useState('Upload');
-  const [mode, setMode] = useState('Server');
   const [pendingRoom, setPendingRoom] = useState(null);
 
   useEffect(() => {
@@ -39,19 +38,14 @@ function App() {
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
-  const modes = [
-    { key: 'P2P', label: 'Direct (P2P)' },
-    { key: 'Server', label: 'Server' }
-  ];
-
   const tabsContent = useMemo(() => {
     if (!clientId) return null;
     return {
-      Upload: <UploadTab clientId={clientId} mode={mode} />,
-      Receive: <ScanTab clientId={clientId} mode={mode} pendingRoom={mode === 'P2P' ? pendingRoom : null} />,
+      Upload: <UploadTab clientId={clientId} />,
+      Receive: <ScanTab clientId={clientId} pendingRoom={pendingRoom} />,
       History: <HistoryTab clientId={clientId} />
     };
-  }, [clientId, mode, pendingRoom]);
+  }, [clientId, pendingRoom]);
 
   return (
     <div className="min-h-screen bg-background text-onsurface">
@@ -66,30 +60,13 @@ function App() {
                 QuickDrop <span className="text-primary">QR</span>
               </h1>
               <p className="mt-2 max-w-2xl text-sm text-onsurface/60 sm:text-base">
-                {mode === 'P2P'
-                  ? 'Share files directly browser-to-browser with a 4-digit code. No server storage.'
-                  : 'Upload any file, generate a QR share link, scan to download instantly.'}
+                Share files directly browser-to-browser with a 4-digit code. No server storage.
               </p>
             </div>
             <div className="flex flex-col gap-3 rounded-2xl bg-background/50 border border-white/5 p-3 text-sm text-onsurface-variant shadow-sm">
               <div>
                 <span className="font-semibold text-onsurface text-xs">Device ID</span>
                 <div className="mt-1 font-mono text-[11px] text-primary/80 break-all">{clientId || 'Generating...'}</div>
-              </div>
-              <div className="inline-flex gap-1 rounded-xl bg-surface/60 p-1">
-                {modes.map((option) => (
-                  <button
-                    key={option.key}
-                    onClick={() => setMode(option.key)}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-300 ${
-                      mode === option.key
-                        ? 'bg-gradient-to-r from-primary to-accent text-background shadow-glow-sm'
-                        : 'text-onsurface/60 hover:text-onsurface'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
               </div>
             </div>
           </div>
@@ -125,7 +102,7 @@ function App() {
         </div>
 
         <footer className="mt-8 text-center text-xs text-onsurface/30">
-          QuickDrop QR &mdash; Files are transferred {mode === 'P2P' ? 'directly between devices' : 'via server'}. No login required.
+          QuickDrop QR &mdash; Files are transferred directly between devices. No login required.
         </footer>
       </div>
     </div>

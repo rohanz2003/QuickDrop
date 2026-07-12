@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { addLocalHistoryEvent } from '../utils/historyStorage.js';
-import { apiUrl, downloadUrl } from '../utils/api.js';
 import { RTC_CONFIG, SIGNALING_WS_URL } from '../utils/signaling.js';
 
 function formatBytes(bytes) {
@@ -10,7 +9,7 @@ function formatBytes(bytes) {
   return `${(bytes / 1024 ** power).toFixed(1)} ${units[power]}`;
 }
 
-export default function ScanTab({ clientId, mode, pendingRoom }) {
+export default function ScanTab({ clientId, pendingRoom }) {
   const [roomCode, setRoomCode] = useState('');
   const [filePreview, setFilePreview] = useState(null);
   const [error, setError] = useState('');
@@ -181,55 +180,12 @@ export default function ScanTab({ clientId, mode, pendingRoom }) {
     document.body.removeChild(link);
   };
 
-  const downloadFromUrl = (url) => {
-    const match = url.match(/\/d\/(.+)$/);
-    if (!match) {
-      setError('Invalid download link');
-      return;
-    }
-    const fileId = match[1];
-    fetch(apiUrl(`/api/file/${fileId}`))
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.file) {
-          setFilePreview(data.file);
 
-          addLocalHistoryEvent(clientId, {
-            clientId,
-            fileId,
-            type: 'download',
-            fileName: data.file.originalName,
-            fileSize: data.file.sizeBytes,
-            mimeType: data.file.mimeType,
-            timestamp: new Date().toISOString()
-          });
-
-          const link = document.createElement('a');
-          link.href = downloadUrl(fileId, clientId);
-          link.setAttribute('download', '');
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        } else {
-          setError(data.error || 'Could not fetch file metadata');
-        }
-      })
-      .catch(() => setError('Unable to load file metadata'));
-  };
-
-  const handleUrlPaste = (e) => {
-    const url = e.clipboardData?.getData('text') || '';
-    if (url.includes('/d/')) {
-      e.preventDefault();
-      downloadFromUrl(url);
-    }
-  };
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="rounded-[2rem] border border-white/10 bg-surface-low/80 p-6 shadow-sm">
-        {mode === 'P2P' ? (
-          <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-6">
             <div className="text-center">
               <p className="text-sm uppercase tracking-[0.35em] text-primary/70">Connect to sender</p>
               <h2 className="mt-2 text-3xl font-semibold text-onsurface">Enter the 4-digit code</h2>
@@ -261,21 +217,6 @@ export default function ScanTab({ clientId, mode, pendingRoom }) {
               </button>
             </div>
           </div>
-        ) : (
-          <div className="flex flex-col items-center gap-3 text-center mb-6">
-            <p className="text-sm uppercase tracking-[0.35em] text-primary/70">Download from server</p>
-            <h2 className="text-3xl font-semibold text-onsurface">Paste a download link</h2>
-            <p className="max-w-2xl text-sm leading-6 text-onsurface/70">
-              Paste a QuickDrop download URL to preview and download the file.
-            </p>
-            <input
-              type="text"
-              placeholder="Paste download URL here..."
-              onPaste={handleUrlPaste}
-              className="mt-2 w-full max-w-md rounded-2xl border border-white/10 bg-background px-5 py-3 text-sm text-onsurface outline-none focus:border-primary/50 focus:shadow-glow-sm transition-all duration-300"
-            />
-          </div>
-        )}
 
         <div className="mt-8 rounded-[2rem] border border-white/10 bg-surface-low/90 p-6 shadow-sm">
           <p className="text-sm uppercase tracking-[0.25em] text-primary/70">File preview</p>
@@ -339,9 +280,7 @@ export default function ScanTab({ clientId, mode, pendingRoom }) {
                 )}
               </div>
             ) : (
-              <p className="text-sm text-onsurface/50">
-                {mode === 'P2P' ? 'Enter a code above to receive a file.' : 'Paste a download URL to preview a file.'}
-              </p>
+              <p className="text-sm text-onsurface/50">Enter a code above to receive a file.</p>
             )}
           </div>
         </div>

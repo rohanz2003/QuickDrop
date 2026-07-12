@@ -22,7 +22,7 @@ function formatBytes(bytes) {
   return `${(bytes / 1024 ** power).toFixed(1)} ${units[power]}`;
 }
 
-export default function UploadTab({ clientId, mode }) {
+export default function UploadTab({ clientId }) {
   const [state, setState] = useState(initialState);
   const [qrFormat, setQrFormat] = useState('png');
   const [dragOver, setDragOver] = useState(false);
@@ -248,11 +248,7 @@ export default function UploadTab({ clientId, mode }) {
   };
 
   const handleUpload = () => {
-    if (mode === 'P2P') {
-      startP2P();
-    } else {
-      uploadServer();
-    }
+    startP2P();
   };
 
   const copyLink = async () => {
@@ -357,12 +353,10 @@ export default function UploadTab({ clientId, mode }) {
             <div className="space-y-2">
               <p className="text-sm uppercase tracking-[0.25em] text-primary/70">Upload</p>
               <h2 className="text-2xl font-semibold text-onsurface">
-                {mode === 'P2P' ? 'Share file directly (P2P)' : 'Upload file to server'}
+                Share file directly (P2P)
               </h2>
               <p className="text-sm text-onsurface/70">
-                {mode === 'P2P'
-                  ? 'Your file stays on your device. A QR code lets the receiver connect directly to you.'
-                  : 'Files are stored for 7 days on the server. No login required.'}
+                Your file stays on your device. Share the 4-digit code with the receiver to transfer directly.
               </p>
             </div>
 
@@ -393,12 +387,10 @@ export default function UploadTab({ clientId, mode }) {
                 <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                {mode === 'P2P' ? 'Direct transfer info' : 'Server upload info'}
+                Direct transfer info
               </p>
               <p className="mt-1">
-                {mode === 'P2P'
-                  ? 'The receiver needs to enter your 4-digit code while you stay online. File is transferred directly browser-to-browser.'
-                  : 'Upload limit is 2GB per file. Files expire automatically after 7 days.'}
+                The receiver needs to enter your 4-digit code while you stay online. File is transferred directly browser-to-browser.
               </p>
             </div>
           </div>
@@ -413,10 +405,10 @@ export default function UploadTab({ clientId, mode }) {
                 <p className="text-base font-semibold text-onsurface break-all">{fileInfo}</p>
                 <div className="flex flex-wrap gap-2 text-xs text-onsurface/70">
                   <span className="rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-primary">
-                    {mode === 'P2P' ? 'Direct transfer' : 'Upload limit 2GB'}
+                    Direct transfer
                   </span>
                   <span className="rounded-full bg-white/5 px-3 py-1">
-                    {mode === 'P2P' ? 'Real-time' : 'Expires in 7 days'}
+                    Real-time
                   </span>
                 </div>
               </div>
@@ -437,7 +429,7 @@ export default function UploadTab({ clientId, mode }) {
           <div>
             <p className="text-sm uppercase tracking-[0.25em] text-primary/70">Upload action</p>
             <h3 className="mt-2 text-xl font-semibold text-onsurface">
-              {mode === 'P2P' ? 'Start direct transfer' : 'Upload and generate QR'}
+              Start direct transfer
             </h3>
           </div>
           <div className="flex gap-2">
@@ -456,7 +448,7 @@ export default function UploadTab({ clientId, mode }) {
                   {state.statusText || 'Processing...'}
                 </span>
               ) : (
-                mode === 'P2P' ? 'Start direct transfer' : 'Start upload'
+                'Start direct transfer'
               )}
             </button>
             {state.uploading && (
@@ -510,7 +502,7 @@ export default function UploadTab({ clientId, mode }) {
         </section>
       )}
 
-      {state.qrSvg && mode !== 'P2P' && (
+      {state.qrSvg && (
         <section className="rounded-[2rem] border border-white/10 bg-surface-low/80 p-6 shadow-sm animate-bounce-in">
           <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="rounded-3xl border border-white/10 bg-background/80 p-6">
