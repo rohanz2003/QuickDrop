@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { loadLocalHistory, mergeHistory, removeLocalHistoryEvent } from '../utils/historyStorage.js';
-import { apiUrl } from '../utils/api.js';
+import { apiUrl, downloadUrl } from '../utils/api.js';
 
 const filterOptions = [
   { label: 'All', value: 'all' },
@@ -123,6 +123,7 @@ export default function HistoryTab({ clientId }) {
                       type="button"
                       onClick={() => setViewEvent(event)}
                       className="rounded-xl border border-onsurface/10 bg-onsurface/5 px-3 py-2 text-sm font-semibold text-onsurface/60 transition-all duration-300 hover:border-primary/30 hover:text-primary hover:bg-primary/10"
+                      title="View details"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -131,8 +132,19 @@ export default function HistoryTab({ clientId }) {
                     </button>
                     <button
                       type="button"
+                      onClick={() => window.open(downloadUrl(event.fileId, clientId), '_blank')}
+                      className="rounded-xl bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30 px-3 py-2 text-primary transition-all duration-300 hover:shadow-glow-sm hover:from-primary/30 hover:to-accent/30"
+                      title="Re-download"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleDelete(event)}
                       className="rounded-xl border border-onsurface/10 bg-onsurface/5 px-3 py-2 text-sm font-semibold text-onsurface/60 transition-all duration-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30"
+                      title="Remove"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

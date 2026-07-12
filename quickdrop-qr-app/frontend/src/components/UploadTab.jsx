@@ -152,16 +152,15 @@ export default function UploadTab({ clientId }) {
     let offset = 0;
     const reader = new FileReader();
 
-    const sendNext = () => {
+    const readNext = () => {
       if (channel.readyState !== 'open') return;
 
       while (offset < fileSize && channel.bufferedAmount < 1048576) {
         const end = Math.min(offset + CHUNK_SIZE, fileSize);
         const slice = file.slice(offset, end);
         offset = end;
-        channel.send(slice);
-        const pct = Math.round((offset / fileSize) * 100);
-        setState((prev) => ({ ...prev, progress: pct, statusText: `Sending ${pct}%` }));
+        reader.readAsArrayBuffer(slice);
+        return;
       }
 
       if (offset >= fileSize) {
@@ -180,11 +179,24 @@ export default function UploadTab({ clientId }) {
         return;
       }
 
-      channel.onbufferedamountlow = sendNext;
+      channel.onbufferedamountlow = readNext;
+    };
+
+    reader.onload = () => {
+      if (channel.readyState === 'open') {
+        channel.send(reader.result);
+        const pct = Math.round((offset / fileSize) * 100);
+        setState((prev) => ({ ...prev, progress: pct, statusText: `Sending ${pct}%` }));
+        readNext();
+      }
+    };
+
+    reader.onerror = () => {
+      setState((prev) => ({ ...prev, error: 'Failed to read file', uploading: false }));
     };
 
     channel.bufferedAmountLowThreshold = 262144;
-    sendNext();
+    readNext();
   };
 
   const uploadServer = async () => {
