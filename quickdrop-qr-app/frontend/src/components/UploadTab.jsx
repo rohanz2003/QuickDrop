@@ -78,6 +78,25 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
       const peer = new RTCPeerConnection(RTC_CONFIG);
       peerRef.current = peer;
 
+      peer.onicecandidate = (e) => {
+        if (e.candidate && ws?.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'signal',
+            payload: { roomId, candidate: e.candidate.toJSON() }
+          }));
+        }
+      };
+
+      peer.onconnectionstatechange = () => {
+        if (peer.connectionState === 'connected') {
+          onChannelUpdate?.({ connected: true });
+        }
+        if (peer.connectionState === 'disconnected' || peer.connectionState === 'failed') {
+          setState((prev) => ({ ...prev, error: 'Peer disconnected', uploading: false }));
+          onChannelUpdate?.({ connected: false });
+        }
+      };
+
       const channel = peer.createDataChannel('file-transfer');
       channelRef.current = channel;
 
@@ -151,24 +170,6 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
         setState((prev) => ({ ...prev, error: 'Signaling connection failed', uploading: false }));
       };
 
-      peer.onicecandidate = (e) => {
-        if (e.candidate && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({
-            type: 'signal',
-            payload: { roomId, candidate: e.candidate.toJSON() }
-          }));
-        }
-      };
-
-      peer.onconnectionstatechange = () => {
-        if (peer.connectionState === 'connected') {
-          onChannelUpdate?.({ connected: true });
-        }
-        if (peer.connectionState === 'disconnected' || peer.connectionState === 'failed') {
-          setState((prev) => ({ ...prev, error: 'Peer disconnected', uploading: false }));
-          onChannelUpdate?.({ connected: false });
-        }
-      };
     } catch (err) {
       setState((prev) => ({ ...prev, uploading: false, error: err.message }));
     }

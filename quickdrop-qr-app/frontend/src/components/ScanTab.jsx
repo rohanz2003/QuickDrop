@@ -92,6 +92,26 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
     const peer = new RTCPeerConnection(RTC_CONFIG);
     peerRef.current = peer;
 
+    peer.onicecandidate = (e) => {
+      if (e.candidate && ws?.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'signal',
+          payload: { roomId, candidate: e.candidate.toJSON() }
+        }));
+      }
+    };
+
+    peer.onconnectionstatechange = () => {
+      if (peer.connectionState === 'connected') {
+        onChannelUpdate?.({ connected: true });
+      }
+      if (peer.connectionState === 'disconnected' || peer.connectionState === 'failed') {
+        setError('Peer disconnected');
+        setP2pStatus('');
+        onChannelUpdate?.({ connected: false });
+      }
+    };
+
     const ws = new WebSocket(SIGNALING_WS_URL);
     wsRef.current = ws;
 
@@ -210,25 +230,6 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
       };
     };
 
-    peer.onicecandidate = (e) => {
-      if (e.candidate && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'signal',
-          payload: { roomId, candidate: e.candidate.toJSON() }
-        }));
-      }
-    };
-
-    peer.onconnectionstatechange = () => {
-      if (peer.connectionState === 'connected') {
-        onChannelUpdate?.({ connected: true });
-      }
-      if (peer.connectionState === 'disconnected' || peer.connectionState === 'failed') {
-        setError('Peer disconnected');
-        setP2pStatus('');
-        onChannelUpdate?.({ connected: false });
-      }
-    };
   }, [clientId]);
 
   const handleConnect = () => {
