@@ -210,7 +210,7 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
     const sendNext = () => {
       if (channel.readyState !== 'open') return;
 
-      while (fileIdx < files.length && channel.bufferedAmount < 5242880) {
+      while (fileIdx < files.length && channel.bufferedAmount < 15728640) {
         const file = files[fileIdx];
         const end = Math.min(offset + CHUNK_SIZE, file.size);
         channel.send(file.slice(offset, end));
@@ -240,7 +240,7 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
       channel.onbufferedamountlow = sendNext;
     };
 
-    channel.bufferedAmountLowThreshold = 1048576;
+    channel.bufferedAmountLowThreshold = 5242880;
     sendNext();
   };
 

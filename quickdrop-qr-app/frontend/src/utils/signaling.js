@@ -3,11 +3,17 @@ import { API_BASE } from './api.js';
 export const RTC_CONFIG = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' }
-  ]
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' }
+  ],
+  iceCandidatePoolSize: 10,
+  bundlePolicy: 'max-bundle',
+  rtcpMuxPolicy: 'require'
 };
 
-export const CHUNK_SIZE = 245760;
+export const CHUNK_SIZE = 262144;
 
 const wsBase = import.meta.env.VITE_SIGNALING_URL;
 export const SIGNALING_WS_URL = wsBase || (API_BASE ? API_BASE.replace(/^http/, 'ws') + '/ws' : '/ws');
