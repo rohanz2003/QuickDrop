@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 
-export default function ChatSidebar({ messages, connected, onSend, role, fullScreen, onClose }) {
+export default function ChatSidebar({ messages, connected, onSend, role, fullScreen, onClose, unreadCount, onMarkRead }) {
   const inputRef = useRef(null);
   const listRef = useRef(null);
 
@@ -36,10 +36,19 @@ export default function ChatSidebar({ messages, connected, onSend, role, fullScr
           </button>
         )}
         <span className={`h-3 w-3 rounded-full ${connected ? 'bg-green-400 shadow-sm shadow-green-400/50' : 'bg-red-400 shadow-sm shadow-red-400/50'}`} />
-        <div>
+        <div className="flex-1">
           <p className={`text-sm font-semibold ${fullScreen ? 'text-white' : 'text-[#1a1a2e]'}`}>Chat</p>
           <p className={`text-[11px] ${fullScreen ? 'text-indigo-200/80' : 'text-[#6b7280]'}`}>{connected ? (role === 'sender' ? 'Receiver connected' : 'Sender connected') : 'Disconnected'}</p>
         </div>
+        {unreadCount > 0 && (
+          <button
+            type="button"
+            onClick={onMarkRead}
+            className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[9px] font-bold text-white shadow-sm shadow-red-500/50 transition-all duration-200 hover:bg-red-600"
+          >
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </button>
+        )}
       </div>
 
       {/* Messages */}
@@ -87,7 +96,7 @@ export default function ChatSidebar({ messages, connected, onSend, role, fullScr
             className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-r from-[#4338ca] to-[#6366f1] text-white transition-all duration-300 hover:shadow-md disabled:opacity-50"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
             </svg>
           </button>
         </div>

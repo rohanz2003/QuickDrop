@@ -41,6 +41,7 @@ function App() {
   const [chatConnected, setChatConnected] = useState(false);
   const [chatRole, setChatRole] = useState(null);
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -59,7 +60,12 @@ function App() {
       if (!update.connected) setChatRole(null);
     }
     if (update.role) setChatRole(update.role);
-    if (update.chatMessage) setChatMessages((prev) => [...prev, update.chatMessage]);
+    if (update.chatMessage) {
+      setChatMessages((prev) => [...prev, update.chatMessage]);
+      if (update.chatMessage.from !== 'me' && !mobileChatOpen) {
+        setUnreadCount((prev) => prev + 1);
+      }
+    }
   };
 
   const sendChat = (text) => {
@@ -82,15 +88,18 @@ function App() {
   const handleNavClick = (key) => {
     if (key === 'Chat') {
       setMobileChatOpen(true);
+      setUnreadCount(0);
     } else {
       setActiveTab(key);
     }
   };
 
+  const markChatRead = () => setUnreadCount(0);
+
   return (
-    <div className="flex min-h-screen flex-col bg-background text-onsurface">
+    <div className="flex min-h-screen flex-col bg-background text-onsurface sm:h-screen">
       {/* HEADER */}
-      <header className="bg-gradient-to-r from-[#4338ca] via-[#3730a3] to-[#312e81] px-4 py-3 shadow-lg shadow-indigo-500/20 sm:px-6 sm:py-4">
+      <header className="bg-gradient-to-r from-[#4338ca] via-[#3730a3] to-[#312e81] px-4 py-3 shadow-lg shadow-indigo-500/20 sm:sticky sm:top-0 sm:z-30 sm:px-6 sm:py-4">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#4338ca] to-[#6366f1] shadow-md shadow-white/10 sm:h-10 sm:w-10">
@@ -120,7 +129,7 @@ function App() {
       </header>
 
       {/* BODY */}
-      <div className="light-panel flex flex-1" style={{ background: '#f8f9fc' }}>
+      <div className="light-panel flex flex-1 overflow-hidden" style={{ background: '#f8f9fc' }}>
         {/* Desktop Chat Sidebar (hidden on mobile) */}
         {chatConnected && (
           <div className="hidden sm:flex">
@@ -129,6 +138,8 @@ function App() {
               connected={chatConnected}
               role={chatRole}
               onSend={sendChat}
+              unreadCount={unreadCount}
+              onMarkRead={markChatRead}
             />
           </div>
         )}
@@ -188,12 +199,17 @@ function App() {
         {chatConnected && (
           <button
             onClick={() => handleNavClick('Chat')}
-            className={`flex flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-[10px] font-semibold transition-all duration-200 ${
+            className={`relative flex flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-[10px] font-semibold transition-all duration-200 ${
               mobileChatOpen
                 ? 'text-[#4338ca]'
                 : 'text-[#9ca3af] hover:text-[#6b7280]'
             }`}
           >
+            {unreadCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[8px] font-bold text-white shadow-sm shadow-red-500/50">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={mobileChatOpen ? 2.5 : 1.8}>
               <path strokeLinecap="round" strokeLinejoin="round" d={navIcons.Chat} />
             </svg>
@@ -212,12 +228,14 @@ function App() {
             onSend={sendChat}
             fullScreen
             onClose={() => setMobileChatOpen(false)}
+            unreadCount={unreadCount}
+            onMarkRead={markChatRead}
           />
         </div>
       )}
 
       {/* Desktop FOOTER (hidden on mobile) */}
-      <footer className="hidden border-t border-onsurface/10 bg-[#f1f3f7] py-4 text-center text-xs text-[#9ca3af] sm:block">
+      <footer className="hidden border-t border-onsurface/10 bg-[#f1f3f7] py-4 text-center text-xs text-[#9ca3af] sm:sticky sm:bottom-0 sm:block">
         <div className="mx-auto max-w-5xl">
           QuickDrop &mdash; Files are transferred directly between devices.
         </div>
