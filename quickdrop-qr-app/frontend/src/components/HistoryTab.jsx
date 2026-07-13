@@ -19,7 +19,6 @@ export default function HistoryTab({ clientId }) {
   const [events, setEvents] = useState([]);
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState('');
-  const [viewEvent, setViewEvent] = useState(null);
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -119,17 +118,19 @@ export default function HistoryTab({ clientId }) {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 sm:shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setViewEvent(event)}
-                      className="rounded-xl border border-onsurface/10 bg-onsurface/5 px-3 py-2 text-sm font-semibold text-onsurface/60 transition-all duration-300 hover:border-primary/30 hover:text-primary hover:bg-primary/10"
-                      title="View details"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    </button>
+                    {event.type === 'download' && (
+                      <button
+                        type="button"
+                        onClick={() => window.open(downloadUrl(event.fileId, clientId), '_blank')}
+                        className="rounded-xl border border-onsurface/10 bg-onsurface/5 px-3 py-2 text-sm font-semibold text-onsurface/60 transition-all duration-300 hover:border-primary/30 hover:text-primary hover:bg-primary/10"
+                        title="Open file"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => window.open(downloadUrl(event.fileId, clientId), '_blank')}
@@ -157,56 +158,6 @@ export default function HistoryTab({ clientId }) {
           )}
         </div>
       </div>
-
-      {/* Detail modal */}
-      {viewEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in" onClick={() => setViewEvent(null)}>
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl ring-1 ring-black/5 animate-slide-up" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary/70">File Details</p>
-              <button onClick={() => setViewEvent(null)} className="rounded-xl p-1.5 text-onsurface-variant hover:bg-onsurface/10">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="mt-5 space-y-4">
-              <div>
-                <p className="text-xs text-onsurface-variant uppercase tracking-wider">Name</p>
-                <p className="mt-1 font-semibold text-onsurface break-all">{viewEvent.fileName}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-onsurface-variant uppercase tracking-wider">Size</p>
-                  <p className="mt-1 font-semibold text-onsurface">{formatBytes(viewEvent.fileSize)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-onsurface-variant uppercase tracking-wider">Type</p>
-                  <p className="mt-1 font-semibold text-onsurface break-all">{viewEvent.mimeType || 'Unknown'}</p>
-                </div>
-              </div>
-              <div>
-                <p className="text-xs text-onsurface-variant uppercase tracking-wider">Direction</p>
-                <span className={`mt-1 inline-block rounded-lg px-3 py-1 text-xs font-semibold ${
-                  viewEvent.type === 'upload'
-                    ? 'bg-primary/10 text-primary'
-                    : 'bg-accent/10 text-accent'
-                }`}>
-                  {viewEvent.type === 'upload' ? 'Upload' : 'Download'}
-                </span>
-              </div>
-              <div>
-                <p className="text-xs text-onsurface-variant uppercase tracking-wider">Date &amp; Time</p>
-                <p className="mt-1 font-semibold text-onsurface">{new Date(viewEvent.timestamp).toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-xs text-onsurface-variant uppercase tracking-wider">File ID</p>
-                <p className="mt-1 font-mono text-xs text-onsurface/60 break-all">{viewEvent.fileId}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {error && (
         <div className="flex items-center gap-2 rounded-3xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-400 animate-fade-in">
