@@ -118,7 +118,7 @@ export default function HistoryTab({ clientId }) {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 sm:shrink-0">
-                    {event.type === 'download' && !event.fileId?.startsWith('p2p-') && (
+                    {!event.fileId?.startsWith('p2p-') && (
                       <button
                         type="button"
                         onClick={() => window.open(downloadUrl(event.fileId, clientId), '_blank')}
@@ -131,7 +131,7 @@ export default function HistoryTab({ clientId }) {
                         </svg>
                       </button>
                     )}
-                    {!event.fileId?.startsWith('p2p-') && (
+                    {event.type === 'download' && !event.fileId?.startsWith('p2p-') && (
                       <button
                         type="button"
                         onClick={() => window.open(downloadUrl(event.fileId, clientId), '_blank')}
