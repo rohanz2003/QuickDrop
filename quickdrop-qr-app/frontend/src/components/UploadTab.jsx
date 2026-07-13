@@ -98,6 +98,7 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
       };
 
       const channel = peer.createDataChannel('file-transfer');
+      channel.binaryType = 'arraybuffer';
       channelRef.current = channel;
 
       channel.onopen = () => {

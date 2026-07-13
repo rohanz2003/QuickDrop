@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 
-export default function ChatSidebar({ messages, connected, onSend, role, fullScreen, onClose, unreadCount, onMarkRead }) {
+export default function ChatSidebar({ messages, connected, onSend, role, fullScreen, onClose }) {
   const inputRef = useRef(null);
   const listRef = useRef(null);
 
@@ -40,15 +40,6 @@ export default function ChatSidebar({ messages, connected, onSend, role, fullScr
           <p className={`text-xs font-semibold ${fullScreen ? 'text-white' : 'text-[#1a1a2e]'}`}>Chat</p>
           <p className={`text-[10px] ${fullScreen ? 'text-indigo-200/80' : 'text-[#6b7280]'}`}>{connected ? (role === 'sender' ? 'Receiver connected' : 'Sender connected') : 'Disconnected'}</p>
         </div>
-        {unreadCount > 0 && (
-          <button
-            type="button"
-            onClick={onMarkRead}
-            className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[9px] font-bold text-white shadow-sm shadow-red-500/50 transition-all duration-200 hover:bg-red-600"
-          >
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </button>
-        )}
       </div>
 
       {/* Messages */}
