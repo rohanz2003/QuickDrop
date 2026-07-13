@@ -27,18 +27,18 @@ export default function ChatSidebar({ messages, connected, onSend, role, fullScr
   return (
     <div className={containerClass}>
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-onsurface/10 px-4 py-3">
+      <div className={`flex items-center gap-3 border-b border-onsurface/10 ${fullScreen ? 'bg-gradient-to-r from-[#4338ca] to-[#3730a3] px-4 py-3' : 'px-4 py-3'}`}>
         {fullScreen && onClose && (
-          <button type="button" onClick={onClose} className="mr-1 rounded-xl p-1.5 text-[#6b7280] hover:bg-[#f3f4f6]">
+          <button type="button" onClick={onClose} className="mr-1 rounded-xl p-1.5 text-white/70 hover:bg-white/10">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
         )}
-        <span className={`h-3 w-3 rounded-full ${connected ? 'bg-green-500 shadow-sm shadow-green-500/50' : 'bg-red-500 shadow-sm shadow-red-500/50'}`} />
+        <span className={`h-3 w-3 rounded-full ${connected ? 'bg-green-400 shadow-sm shadow-green-400/50' : 'bg-red-400 shadow-sm shadow-red-400/50'}`} />
         <div>
-          <p className="text-sm font-semibold text-[#1a1a2e]">Chat</p>
-          <p className="text-[11px] text-[#6b7280]">{connected ? (role === 'sender' ? 'Receiver connected' : 'Sender connected') : 'Disconnected'}</p>
+          <p className={`text-sm font-semibold ${fullScreen ? 'text-white' : 'text-[#1a1a2e]'}`}>Chat</p>
+          <p className={`text-[11px] ${fullScreen ? 'text-indigo-200/80' : 'text-[#6b7280]'}`}>{connected ? (role === 'sender' ? 'Receiver connected' : 'Sender connected') : 'Disconnected'}</p>
         </div>
       </div>
 

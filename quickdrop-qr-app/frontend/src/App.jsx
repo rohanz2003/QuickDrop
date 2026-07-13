@@ -102,11 +102,19 @@ function App() {
             </div>
           </div>
 
-          <div className="hidden rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-xs text-white/70 backdrop-blur sm:block">
-            <span className="font-semibold text-white/50">ID: </span>
-            <span className="font-mono text-indigo-200">
-              {clientId ? clientId.slice(0, 8) + '...' : 'Generating...'}
-            </span>
+          <div className="flex items-center gap-2">
+            {chatConnected && (
+              <span className="flex items-center gap-1.5 rounded-full border border-green-400/30 bg-green-500/15 px-2.5 py-1 text-[10px] font-semibold text-green-300 sm:hidden">
+                <span className="h-1.5 w-1.5 rounded-full bg-green-400 shadow-sm shadow-green-400/60 animate-pulse" />
+                Live
+              </span>
+            )}
+            <div className="hidden rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-xs text-white/70 backdrop-blur sm:block">
+              <span className="font-semibold text-white/50">ID: </span>
+              <span className="font-mono text-indigo-200">
+                {clientId ? clientId.slice(0, 8) + '...' : 'Generating...'}
+              </span>
+            </div>
           </div>
         </div>
       </header>
@@ -126,7 +134,14 @@ function App() {
         )}
 
         {/* Main content */}
-        <div className="flex flex-1 flex-col px-4 py-6 pb-20 sm:px-10 sm:pb-8">
+        <div className="flex flex-1 flex-col px-4 py-6 pb-24 sm:px-10 sm:pb-8">
+          {/* Mobile connection banner */}
+          {chatConnected && (
+            <div className="mb-3 flex items-center justify-center gap-2 rounded-2xl border border-green-400/20 bg-green-500/10 px-4 py-2 text-xs font-medium text-green-600 sm:hidden">
+              <span className="h-2 w-2 rounded-full bg-green-500 shadow-sm shadow-green-500/50 animate-pulse" />
+              Peer connected — tap Chat to message
+            </div>
+          )}
           {/* Desktop tab switcher (hidden on mobile) */}
           <div className="hidden self-center sm:inline-flex sm:gap-1.5 sm:rounded-2xl sm:bg-white sm:p-1.5 sm:shadow-sm sm:ring-1 sm:ring-black/5">
             {tabs.map((tab) => (
@@ -160,12 +175,12 @@ function App() {
       </div>
 
       {/* Mobile Bottom Nav (hidden on desktop) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-onsurface/10 bg-white px-2 py-1 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] sm:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-onsurface/10 bg-white/95 px-1 pb-[env(safe-area-inset-bottom,0px)] pt-1 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur-lg sm:hidden">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex flex-col items-center gap-0.5 rounded-xl px-4 py-2 text-xs font-medium transition-all duration-200 ${
+            className={`flex flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-[10px] font-semibold transition-all duration-200 ${
               activeTab === tab.key
                 ? 'text-[#4338ca]'
                 : 'text-[#9ca3af] hover:text-[#6b7280]'
@@ -180,7 +195,7 @@ function App() {
         {chatConnected && (
           <button
             onClick={() => handleNavClick('Chat')}
-            className={`flex flex-col items-center gap-0.5 rounded-xl px-4 py-2 text-xs font-medium transition-all duration-200 ${
+            className={`flex flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-[10px] font-semibold transition-all duration-200 ${
               mobileChatOpen
                 ? 'text-[#4338ca]'
                 : 'text-[#9ca3af] hover:text-[#6b7280]'
@@ -196,7 +211,7 @@ function App() {
 
       {/* Mobile Full-Screen Chat Overlay */}
       {mobileChatOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-white sm:hidden">
+        <div className="fixed inset-0 z-50 flex flex-col bg-white animate-slide-up sm:hidden">
           <ChatSidebar
             messages={chatMessages}
             connected={chatConnected}
