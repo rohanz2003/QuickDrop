@@ -134,14 +134,7 @@ function App() {
         )}
 
         {/* Main content */}
-        <div className="flex flex-1 flex-col px-4 py-6 pb-24 sm:px-10 sm:pb-8">
-          {/* Mobile connection banner */}
-          {chatConnected && (
-            <div className="mb-3 flex items-center justify-center gap-2 rounded-2xl border border-green-400/20 bg-green-500/10 px-4 py-2 text-xs font-medium text-green-600 sm:hidden">
-              <span className="h-2 w-2 rounded-full bg-green-500 shadow-sm shadow-green-500/50 animate-pulse" />
-              Peer connected — tap Chat to message
-            </div>
-          )}
+        <div className="flex flex-1 flex-col overflow-y-auto px-4 py-6 pb-24 min-h-0 sm:px-10 sm:pb-8">
           {/* Desktop tab switcher (hidden on mobile) */}
           <div className="hidden self-center sm:inline-flex sm:gap-1.5 sm:rounded-2xl sm:bg-white sm:p-1.5 sm:shadow-sm sm:ring-1 sm:ring-black/5">
             {tabs.map((tab) => (
@@ -162,7 +155,7 @@ function App() {
             ))}
           </div>
 
-          <div className="mt-6 flex-1 sm:mt-8">
+          <div className="mt-6 flex-1 overflow-y-auto min-h-0 sm:mt-8">
             {tabsContent && (
               <>
                 <div className={activeTab === 'Send' ? 'block' : 'hidden'}>{tabsContent.Send}</div>
