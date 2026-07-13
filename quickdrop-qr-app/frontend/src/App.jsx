@@ -100,7 +100,7 @@ function App() {
   return (
     <div className="flex min-h-screen flex-col bg-background text-onsurface sm:h-screen">
       {/* HEADER */}
-      <header className="bg-gradient-to-r from-[#4338ca] via-[#3730a3] to-[#312e81] px-3 py-2 shadow-lg shadow-indigo-500/20 sm:sticky sm:top-0 sm:z-30 sm:px-6 sm:py-4">
+      <header className="sticky top-0 z-30 bg-gradient-to-r from-[#4338ca] via-[#3730a3] to-[#312e81] px-3 py-2 shadow-lg shadow-indigo-500/20 sm:px-6 sm:py-4">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <div className="flex items-center gap-1.5 sm:gap-3">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#4338ca] to-[#6366f1] shadow-md shadow-white/10 sm:h-10 sm:w-10 sm:rounded-xl">
