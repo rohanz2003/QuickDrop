@@ -180,7 +180,7 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
       fileSize: f.size,
       mimeType: f.type || 'application/octet-stream'
     }));
-    channel.send(new TextEncoder().encode('__BATCH__' + JSON.stringify(batchMeta)));
+    channel.send(new TextEncoder().encode('__BATCH_' + JSON.stringify(batchMeta)));
 
     const totalSize = files.reduce((sum, f) => sum + f.size, 0);
     let fileIdx = 0;

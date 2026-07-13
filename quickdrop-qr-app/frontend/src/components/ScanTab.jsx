@@ -169,7 +169,7 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
 
         if (data instanceof ArrayBuffer && data.byteLength >= 8) {
           const prefix = new TextDecoder().decode(data.slice(0, 8));
-          if (prefix === '__BATCH__') {
+          if (prefix === '__BATCH_') {
             const fileList = JSON.parse(new TextDecoder().decode(data.slice(8)));
             fileListRef.current = fileList;
             fileMetaRef.current = fileList[0] || null;
