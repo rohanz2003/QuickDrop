@@ -5,7 +5,7 @@ import { apiUrl } from '../utils/api.js';
 import { createOfferRoom, RTC_CONFIG, CHUNK_SIZE, SIGNALING_WS_URL } from '../utils/signaling.js';
 
 const initialState = {
-  file: null,
+  files: [],
   qrSvg: null,
   qrData: null,
   roomCode: null,
@@ -40,23 +40,37 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
     };
   }, []);
 
-  const fileInfo = useMemo(() => {
-    if (!state.file) return null;
-    return `${state.file.name} • ${formatBytes(state.file.size)} • ${state.file.type || 'Unknown'}`;
-  }, [state.file]);
+  const filesInfo = useMemo(() => {
+    if (!state.files.length) return null;
+    const total = state.files.reduce((sum, f) => sum + f.size, 0);
+    return `${state.files.length} file${state.files.length > 1 ? 's' : ''} • ${formatBytes(total)}`;
+  }, [state.files]);
 
-  const handleFile = useCallback((file) => {
-    setState((prev) => ({ ...prev, file, error: null, qrSvg: null, qrData: null, roomCode: null }));
+  const handleFiles = useCallback((newFiles) => {
+    setState((prev) => ({
+      ...prev,
+      files: [...prev.files, ...Array.from(newFiles)],
+      error: null, qrSvg: null, qrData: null, roomCode: null
+    }));
+  }, []);
+
+  const removeFile = useCallback((index) => {
+    setState((prev) => ({
+      ...prev,
+      files: prev.files.filter((_, i) => i !== index),
+      error: null, qrSvg: null, qrData: null, roomCode: null
+    }));
   }, []);
 
   const startP2P = async () => {
-    const file = state.file;
-    if (!file) return;
+    const files = state.files;
+    if (!files.length) return;
 
     setState((prev) => ({ ...prev, uploading: true, progress: 0, error: null, statusText: 'Creating room...' }));
 
     try {
-      const roomId = await createOfferRoom(clientId, file.name, file.size, file.type);
+      const first = files[0];
+      const roomId = await createOfferRoom(clientId, files.length > 1 ? `${files.length} files` : first.name, files.reduce((s, f) => s + f.size, 0), first.type);
       roomIdRef.current = roomId;
 
       setState((prev) => ({ ...prev, roomCode: roomId, statusText: 'Waiting for receiver to connect...' }));
@@ -70,7 +84,7 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
       channel.onopen = () => {
         setState((prev) => ({ ...prev, statusText: 'Connected! Sending file...' }));
         onChannelUpdate?.({ channel, connected: true, role: 'sender' });
-        sendFile(file, channel);
+        sendFiles(state.files, channel);
       };
 
       channel.onmessage = (e) => {
@@ -160,22 +174,28 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
     }
   };
 
-  const sendFile = (file, channel) => {
-    const meta = JSON.stringify({ fileName: file.name, fileSize: file.size, mimeType: file.type });
-    channel.send(new TextEncoder().encode('__META__' + meta));
+  const sendFiles = (files, channel) => {
+    const batchMeta = files.map(f => ({
+      fileName: f.name,
+      fileSize: f.size,
+      mimeType: f.type || 'application/octet-stream'
+    }));
+    channel.send(new TextEncoder().encode('__BATCH__' + JSON.stringify(batchMeta)));
 
-    const fileSize = file.size;
+    const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+    let fileIdx = 0;
     let offset = 0;
 
     const onDone = () => {
       setState((prev) => ({ ...prev, uploading: false, progress: 100, statusText: 'Complete!' }));
+      const first = files[0];
       addLocalHistoryEvent(clientId, {
         clientId,
         fileId: roomIdRef.current,
         type: 'upload',
-        fileName: file.name,
-        fileSize: file.size,
-        mimeType: file.type,
+        fileName: files.length > 1 ? `${files.length} files` : first.name,
+        fileSize: totalSize,
+        mimeType: first.type,
         timestamp: new Date().toISOString()
       });
     };
@@ -189,17 +209,30 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
     const sendNext = () => {
       if (channel.readyState !== 'open') return;
 
-      while (offset < fileSize && channel.bufferedAmount < 5242880) {
-        const end = Math.min(offset + CHUNK_SIZE, fileSize);
+      while (fileIdx < files.length && channel.bufferedAmount < 5242880) {
+        const file = files[fileIdx];
+        const end = Math.min(offset + CHUNK_SIZE, file.size);
         channel.send(file.slice(offset, end));
         offset = end;
 
-        const pct = Math.round((offset / fileSize) * 100);
+        if (offset >= file.size) {
+          fileIdx++;
+          offset = 0;
+        }
+
+        let totalSent = 0;
+        for (let i = 0; i < fileIdx; i++) totalSent += files[i].size;
+        totalSent += offset;
+        const pct = Math.round((totalSent / totalSize) * 100);
         setState((prev) => ({ ...prev, progress: pct, statusText: `Sending ${pct}%` }));
       }
 
-      if (offset >= fileSize) {
-        sendEnd();
+      if (fileIdx >= files.length) {
+        if (channel.bufferedAmount === 0) {
+          sendEnd();
+        } else {
+          channel.onbufferedamountlow = sendEnd;
+        }
         return;
       }
 
@@ -211,15 +244,16 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
   };
 
   const uploadServer = async () => {
-    if (!state.file) return;
+    if (!state.files.length) return;
     setState((prev) => ({ ...prev, uploading: true, progress: 0, error: null, statusText: 'Uploading to server...' }));
 
+    const file = state.files[0];
     const formData = new FormData();
-    formData.append('file', state.file);
+    formData.append('file', file);
     formData.append('clientId', clientId);
-    formData.append('originalName', state.file.name);
-    formData.append('mimeType', state.file.type);
-    formData.append('sizeBytes', state.file.size);
+    formData.append('originalName', file.name);
+    formData.append('mimeType', file.type);
+    formData.append('sizeBytes', file.size);
 
     try {
       const xhr = new XMLHttpRequest();
@@ -332,9 +366,8 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
   const handleDrop = useCallback((e) => {
     e.preventDefault();
     setDragOver(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
-  }, [handleFile]);
+    if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+  }, [handleFiles]);
 
   const handleDragOver = useCallback((e) => {
     e.preventDefault();
@@ -412,7 +445,7 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
-                  {state.file ? 'Choose different file' : 'Choose file'}
+                  {state.files.length ? 'Add more files' : 'Choose files'}
                 </span>
               </button>
             </div>
@@ -420,8 +453,9 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
             <input
               ref={fileInputRef}
               type="file"
+              multiple
               className="hidden"
-              onChange={(event) => event.target.files?.[0] && handleFile(event.target.files[0])}
+              onChange={(event) => event.target.files?.length && handleFiles(event.target.files)}
             />
 
             <div className="rounded-3xl border border-onsurface/5 bg-surface/50 p-4 text-sm text-onsurface-variant">
@@ -441,23 +475,33 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
         <div className="rounded-[2rem] border border-onsurface/10 bg-surface-low/80 p-6 shadow-sm">
           <p className="text-sm uppercase tracking-[0.25em] text-primary/70">Preview</p>
           <div className="mt-5 min-h-[180px] rounded-3xl border border-onsurface/5 bg-background/80 p-4">
-            {state.file ? (
+            {state.files.length ? (
               <div className="space-y-3 animate-fade-in">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-onsurface/70">Selected file</p>
-                    <p className="mt-0.5 text-base font-semibold text-onsurface break-all">{fileInfo}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setState((prev) => ({ ...prev, file: null, error: null, roomCode: null, qrSvg: null, qrData: null }))}
-                    disabled={state.uploading}
-                    className="shrink-0 rounded-xl border border-onsurface/10 bg-onsurface/5 p-1.5 text-onsurface/60 transition-all duration-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 disabled:hidden"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-onsurface/70">
+                    {state.files.length} file{state.files.length > 1 ? 's' : ''} selected
+                  </p>
+                  <p className="text-sm font-semibold text-onsurface">{filesInfo}</p>
+                </div>
+                <div className="max-h-48 space-y-2 overflow-y-auto">
+                  {state.files.map((f, i) => (
+                    <div key={i} className="flex items-center justify-between gap-2 rounded-2xl border border-onsurface/5 bg-background/60 px-3 py-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-onsurface">{f.name}</p>
+                        <p className="text-xs text-onsurface/50">{formatBytes(f.size)}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(i)}
+                        disabled={state.uploading}
+                        className="shrink-0 rounded-xl border border-onsurface/10 bg-onsurface/5 p-1.5 text-onsurface/60 transition-all duration-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 disabled:hidden"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs text-onsurface/70">
                   <span className="rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-primary">
@@ -492,7 +536,7 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
             <button
               type="button"
               onClick={handleUpload}
-              disabled={!state.file || state.uploading}
+              disabled={!state.files.length || state.uploading}
               className="inline-flex items-center justify-center rounded-3xl bg-gradient-to-r from-primary to-accent px-6 py-3 text-sm font-semibold text-background transition-all duration-300 hover:shadow-glow disabled:cursor-not-allowed disabled:opacity-50"
             >
               {state.uploading ? (

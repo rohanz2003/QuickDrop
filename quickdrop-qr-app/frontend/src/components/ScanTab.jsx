@@ -16,7 +16,6 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
   const [p2pProgress, setP2pProgress] = useState(0);
   const [p2pResult, setP2pResult] = useState(null);
   const [viewDetails, setViewDetails] = useState(null);
-  const blobRef = useRef(null);
 
   useEffect(() => {
     if (pendingRoom) {
@@ -38,32 +37,50 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
   const receiveBufferRef = useRef([]);
   const receivedSizeRef = useRef(0);
   const fileMetaRef = useRef(null);
+  const fileListRef = useRef(null);
   const endReceivedRef = useRef(false);
+  const blobsRef = useRef([]);
 
   const tryFinish = () => {
-    const meta = fileMetaRef.current;
-    const expected = meta?.fileSize || 0;
+    const fileList = fileListRef.current;
+    if (!fileList || !fileList.length) return;
+
+    const totalExpected = fileList.reduce((s, f) => s + f.fileSize, 0);
     const received = receivedSizeRef.current;
 
-    if (!meta || (expected > 0 && received !== expected)) {
-      if (meta) setP2pStatus(`Waiting for remaining data (${formatBytes(received)} / ${formatBytes(expected)})...`);
+    if (received !== totalExpected) {
+      setP2pStatus(`Waiting for remaining data (${formatBytes(received)} / ${formatBytes(totalExpected)})...`);
       return;
     }
 
-    const blob = new Blob(receiveBufferRef.current);
-    blobRef.current = blob;
+    const buf = new Uint8Array(received);
+    let pos = 0;
+    for (const chunk of receiveBufferRef.current) {
+      buf.set(new Uint8Array(chunk), pos);
+      pos += chunk.byteLength;
+    }
 
-    addLocalHistoryEvent(clientId, {
-      clientId,
-      fileId: 'p2p-' + Date.now(),
-      type: 'download',
-      fileName: meta?.fileName || 'Unknown',
-      fileSize: meta?.fileSize || 0,
-      mimeType: meta?.mimeType || 'application/octet-stream',
-      timestamp: new Date().toISOString()
-    });
+    const blobs = [];
+    let offset = 0;
+    for (const info of fileList) {
+      blobs.push(new Blob([buf.slice(offset, offset + info.fileSize)]));
+      offset += info.fileSize;
+    }
+    blobsRef.current = blobs;
 
-    setP2pResult({ ...meta });
+    for (const info of fileList) {
+      addLocalHistoryEvent(clientId, {
+        clientId,
+        fileId: 'p2p-' + Date.now(),
+        type: 'download',
+        fileName: info.fileName,
+        fileSize: info.fileSize,
+        mimeType: info.mimeType,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    setP2pResult(fileList);
     setP2pStatus('Download ready!');
     setP2pProgress(100);
   };
@@ -152,8 +169,22 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
 
         if (data instanceof ArrayBuffer && data.byteLength >= 8) {
           const prefix = new TextDecoder().decode(data.slice(0, 8));
+          if (prefix === '__BATCH__') {
+            const fileList = JSON.parse(new TextDecoder().decode(data.slice(8)));
+            fileListRef.current = fileList;
+            fileMetaRef.current = fileList[0] || null;
+            receiveBufferRef.current = [];
+            receivedSizeRef.current = 0;
+            setP2pStatus(`Receiving ${fileList.length} file${fileList.length > 1 ? 's' : ''}...`);
+            return;
+          }
+        }
+
+        if (data instanceof ArrayBuffer && data.byteLength >= 8) {
+          const prefix = new TextDecoder().decode(data.slice(0, 8));
           if (prefix === '__META__') {
             const meta = JSON.parse(new TextDecoder().decode(data.slice(8)));
+            fileListRef.current = [meta];
             fileMetaRef.current = meta;
             receiveBufferRef.current = [];
             receivedSizeRef.current = 0;
@@ -163,8 +194,10 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
 
         receiveBufferRef.current.push(data);
         receivedSizeRef.current += data.byteLength;
-        if (fileMetaRef.current?.fileSize) {
-          const pct = Math.round((receivedSizeRef.current / fileMetaRef.current.fileSize) * 100);
+        const list = fileListRef.current;
+        if (list && list.length) {
+          const total = list.reduce((s, f) => s + f.fileSize, 0);
+          const pct = Math.round((receivedSizeRef.current / total) * 100);
           setP2pProgress(pct);
           setP2pStatus(`Receiving ${pct}%`);
           if (pct >= 100) tryFinish();
@@ -208,17 +241,24 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
     startP2PDownload(code);
   };
 
-  const downloadP2PFile = () => {
-    const blob = blobRef.current;
-    if (!blob || !p2pResult) return;
+  const downloadP2PFile = (index) => {
+    const blob = blobsRef.current[index];
+    const info = p2pResult?.[index];
+    if (!blob || !info) return;
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = p2pResult.fileName || 'download';
+    link.download = info.fileName || 'download';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     setTimeout(() => URL.revokeObjectURL(url), 60000);
+  };
+
+  const downloadAllP2P = () => {
+    for (let i = 0; i < (p2pResult?.length || 0); i++) {
+      setTimeout(() => downloadP2PFile(i), i * 500);
+    }
   };
 
   const handleRemoveP2P = () => {
@@ -227,10 +267,11 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
     wsRef.current = null;
     peerRef.current = null;
     channelRef.current = null;
-    blobRef.current = null;
+    blobsRef.current = [];
     receiveBufferRef.current = [];
     receivedSizeRef.current = 0;
     fileMetaRef.current = null;
+    fileListRef.current = null;
     setP2pResult(null);
     setP2pStatus('');
     setP2pProgress(0);
@@ -292,46 +333,63 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
           <div className="mt-4 rounded-[1.5rem] border border-onsurface/5 bg-background/80 p-5 min-h-[200px]">
             {p2pResult ? (
               <div className="space-y-3 animate-fade-in">
-                <p className="text-sm text-onsurface/70">File received!</p>
-                <p className="text-base font-semibold text-onsurface break-all">{p2pResult.fileName || 'Unknown file'}</p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <p className="text-sm text-onsurface/70">Size</p>
-                    <p className="text-base font-semibold text-onsurface">{formatBytes(p2pResult.fileSize)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-onsurface/70">Type</p>
-                    <p className="text-base font-semibold text-onsurface break-all">{p2pResult.mimeType || 'application/octet-stream'}</p>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-onsurface/70">
+                    {p2pResult.length} file{p2pResult.length > 1 ? 's' : ''} received!
+                  </p>
+                  <p className="text-sm font-semibold text-onsurface">
+                    {formatBytes(p2pResult.reduce((s, f) => s + f.fileSize, 0))}
+                  </p>
                 </div>
-                <div className="mt-3 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setViewDetails(p2pResult)}
-                    className="rounded-xl border border-onsurface/10 bg-onsurface/5 px-3 py-2 text-onsurface/60 transition-all duration-300 hover:border-primary/30 hover:text-primary hover:bg-primary/10"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={downloadP2PFile}
-                    className="rounded-xl bg-gradient-to-r from-primary to-accent px-3 py-2 text-white shadow-sm transition-all duration-300 hover:shadow-md"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                  </button>
+                <div className="max-h-48 space-y-2 overflow-y-auto">
+                  {p2pResult.map((info, i) => (
+                    <div key={i} className="flex items-center justify-between gap-2 rounded-2xl border border-onsurface/5 bg-background/60 px-3 py-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-onsurface">{info.fileName}</p>
+                        <p className="text-xs text-onsurface/50">{formatBytes(info.fileSize)}</p>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => downloadP2PFile(i)}
+                          className="rounded-xl bg-gradient-to-r from-primary to-accent px-3 py-2 text-white shadow-sm transition-all duration-300 hover:shadow-md"
+                          title="Download"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setViewDetails(info)}
+                          className="rounded-xl border border-onsurface/10 bg-onsurface/5 px-3 py-2 text-onsurface/60 transition-all duration-300 hover:border-primary/30 hover:text-primary hover:bg-primary/10"
+                          title="Details"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  {p2pResult.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={downloadAllP2P}
+                      className="rounded-3xl bg-gradient-to-r from-primary to-accent px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:shadow-md"
+                    >
+                      Download All
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={handleRemoveP2P}
-                    className="rounded-xl border border-onsurface/10 bg-onsurface/5 px-3 py-2 text-onsurface/60 transition-all duration-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30"
+                    className="rounded-3xl border border-red-500/30 bg-red-500/10 px-5 py-2.5 text-sm font-semibold text-red-400 transition-all duration-300 hover:bg-red-500/20"
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                    Clear
                   </button>
                 </div>
               </div>
