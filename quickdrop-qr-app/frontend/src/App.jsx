@@ -41,6 +41,7 @@ function App() {
   const [chatConnected, setChatConnected] = useState(false);
   const [chatRole, setChatRole] = useState(null);
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
+  const [desktopChatOpen, setDesktopChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -62,7 +63,7 @@ function App() {
     if (update.role) setChatRole(update.role);
     if (update.chatMessage) {
       setChatMessages((prev) => [...prev, update.chatMessage]);
-      if (update.chatMessage.from !== 'me' && !mobileChatOpen) {
+      if (update.chatMessage.from !== 'me' && !mobileChatOpen && !desktopChatOpen) {
         setUnreadCount((prev) => prev + 1);
       }
     }
@@ -113,6 +114,23 @@ function App() {
 
           <div className="flex items-center gap-2">
             {chatConnected && (
+              <button
+                type="button"
+                onClick={() => { setDesktopChatOpen(prev => !prev); if (!desktopChatOpen) setUnreadCount(0); }}
+                className="relative hidden sm:flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-2.5 py-1.5 text-xs text-white/70 backdrop-blur transition-all duration-300 hover:bg-white/20"
+              >
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1.5 -top-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-red-500 px-1 text-[7px] font-bold text-white shadow-sm shadow-red-500/50">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d={navIcons.Chat} />
+                </svg>
+                <span>Chat</span>
+              </button>
+            )}
+            {chatConnected && (
               <span className="flex items-center gap-1.5 rounded-full border border-green-400/30 bg-green-500/15 px-2.5 py-1 text-[10px] font-semibold text-green-300 sm:hidden">
                 <span className="h-1.5 w-1.5 rounded-full bg-green-400 shadow-sm shadow-green-400/60 animate-pulse" />
                 Live
@@ -130,20 +148,6 @@ function App() {
 
       {/* BODY */}
       <div className="light-panel flex flex-1 overflow-hidden" style={{ background: '#f8f9fc' }}>
-        {/* Desktop Chat Sidebar (hidden on mobile) */}
-        {chatConnected && (
-          <div className="hidden sm:flex">
-            <ChatSidebar
-              messages={chatMessages}
-              connected={chatConnected}
-              role={chatRole}
-              onSend={sendChat}
-              unreadCount={unreadCount}
-              onMarkRead={markChatRead}
-            />
-          </div>
-        )}
-
         {/* Main content */}
         <div className="flex flex-1 flex-col overflow-y-auto px-3 py-3 pb-20 min-h-0 sm:px-10 sm:py-6 sm:pb-8">
           {/* Desktop tab switcher (hidden on mobile) */}
@@ -176,6 +180,21 @@ function App() {
             )}
           </div>
         </div>
+
+        {/* Desktop Chat Overlay */}
+        {chatConnected && desktopChatOpen && (
+          <div className="hidden sm:flex animate-slide-in">
+            <ChatSidebar
+              messages={chatMessages}
+              connected={chatConnected}
+              role={chatRole}
+              onSend={sendChat}
+              onClose={() => setDesktopChatOpen(false)}
+              unreadCount={unreadCount}
+              onMarkRead={markChatRead}
+            />
+          </div>
+        )}
       </div>
 
       {/* Mobile Bottom Nav (hidden on desktop) */}

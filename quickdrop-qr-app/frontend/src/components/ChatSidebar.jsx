@@ -27,18 +27,18 @@ export default function ChatSidebar({ messages, connected, onSend, role, fullScr
   return (
     <div className={containerClass}>
       {/* Header */}
-      <div className={`flex items-center gap-3 border-b border-onsurface/10 ${fullScreen ? 'bg-gradient-to-r from-[#4338ca] to-[#3730a3] px-4 py-3' : 'px-4 py-3'}`}>
-        {fullScreen && onClose && (
-          <button type="button" onClick={onClose} className="mr-1 rounded-xl p-1.5 text-white/70 hover:bg-white/10">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <div className={`flex items-center gap-2 border-b border-onsurface/10 ${fullScreen ? 'bg-gradient-to-r from-[#4338ca] to-[#3730a3] px-4 py-3' : 'px-3 py-2.5'}`}>
+        {onClose && (
+          <button type="button" onClick={onClose} className={`mr-0.5 rounded-lg p-1 transition-all duration-200 hover:bg-black/5 ${fullScreen ? 'text-white/70 hover:bg-white/10' : 'text-[#6b7280] hover:bg-[#f3f4f6]'}`}>
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
         )}
-        <span className={`h-3 w-3 rounded-full ${connected ? 'bg-green-400 shadow-sm shadow-green-400/50' : 'bg-red-400 shadow-sm shadow-red-400/50'}`} />
+        <span className={`h-2.5 w-2.5 rounded-full ${connected ? 'bg-green-400 shadow-sm shadow-green-400/50' : 'bg-red-400 shadow-sm shadow-red-400/50'}`} />
         <div className="flex-1">
-          <p className={`text-sm font-semibold ${fullScreen ? 'text-white' : 'text-[#1a1a2e]'}`}>Chat</p>
-          <p className={`text-[11px] ${fullScreen ? 'text-indigo-200/80' : 'text-[#6b7280]'}`}>{connected ? (role === 'sender' ? 'Receiver connected' : 'Sender connected') : 'Disconnected'}</p>
+          <p className={`text-xs font-semibold ${fullScreen ? 'text-white' : 'text-[#1a1a2e]'}`}>Chat</p>
+          <p className={`text-[10px] ${fullScreen ? 'text-indigo-200/80' : 'text-[#6b7280]'}`}>{connected ? (role === 'sender' ? 'Receiver connected' : 'Sender connected') : 'Disconnected'}</p>
         </div>
         {unreadCount > 0 && (
           <button
