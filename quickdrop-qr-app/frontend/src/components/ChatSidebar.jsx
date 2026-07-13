@@ -22,7 +22,7 @@ export default function ChatSidebar({ messages, connected, onSend, role, fullScr
 
   const containerClass = fullScreen
     ? 'flex flex-1 flex-col bg-white'
-    : 'flex w-72 flex-col self-stretch border-r border-onsurface/10 bg-white shadow-sm';
+    : 'flex w-96 flex-col self-stretch border-r border-onsurface/10 bg-white shadow-sm';
 
   return (
     <div className={containerClass}>

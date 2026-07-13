@@ -168,6 +168,26 @@ function App() {
                 {tab.key}
               </button>
             ))}
+            {chatConnected && (
+              <button
+                onClick={() => { setDesktopChatOpen(prev => !prev); if (!desktopChatOpen) setUnreadCount(0); }}
+                className={`relative flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-300 ${
+                  desktopChatOpen
+                    ? 'bg-gradient-to-r from-[#4338ca] to-[#6366f1] text-white shadow-md'
+                    : 'text-[#6b7280] hover:text-[#1a1a2e]'
+                }`}
+              >
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[8px] font-bold text-white shadow-sm shadow-red-500/50">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d={navIcons.Chat} />
+                </svg>
+                Chat
+              </button>
+            )}
           </div>
 
           <div className="mt-3 flex-1 overflow-y-auto min-h-0 sm:mt-8">
