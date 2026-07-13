@@ -283,18 +283,18 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
 
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="rounded-[2rem] border border-onsurface/10 bg-surface-low/80 p-6 shadow-sm">
-        <div className="flex flex-col items-center gap-6">
+    <div className="space-y-3 animate-fade-in sm:space-y-6">
+      <div className="rounded-2xl border border-onsurface/10 bg-surface-low/80 p-4 shadow-sm sm:rounded-[2rem] sm:p-6">
+        <div className="flex flex-col items-center gap-3 sm:gap-6">
             <div className="text-center">
-              <p className="text-sm uppercase tracking-[0.35em] text-primary/70">Connect to sender</p>
-              <h2 className="mt-2 text-3xl font-semibold text-onsurface">Enter the 4-digit code</h2>
-              <p className="mt-2 text-sm text-onsurface/70">
+              <p className="text-[10px] uppercase tracking-[0.35em] text-primary/70 sm:text-sm">Connect to sender</p>
+              <h2 className="mt-1 text-lg font-semibold text-onsurface sm:mt-2 sm:text-3xl">Enter the 4-digit code</h2>
+              <p className="mt-1 text-xs text-onsurface/70 sm:mt-2 sm:text-sm">
                 Ask the sender for their code and enter it below to receive the file directly.
               </p>
             </div>
 
-            <div className="flex flex-col items-center gap-4">
+            <div className="flex flex-col items-center gap-3 sm:gap-4">
               <input
                 type="text"
                 maxLength={4}
@@ -302,7 +302,7 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
                 onChange={(e) => setRoomCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
                 onKeyDown={(e) => e.key === 'Enter' && handleConnect()}
                 placeholder="0000"
-                className="w-48 rounded-2xl border border-onsurface/10 bg-background px-6 py-4 text-center text-4xl font-extrabold tracking-[0.3em] text-primary outline-none focus:border-primary/50 focus:shadow-glow-sm transition-all duration-300"
+                className="w-36 rounded-xl border border-onsurface/10 bg-background px-4 py-3 text-center text-2xl font-extrabold tracking-[0.3em] text-primary outline-none focus:border-primary/50 focus:shadow-glow-sm transition-all duration-300 sm:w-48 sm:rounded-2xl sm:px-6 sm:py-4 sm:text-4xl"
                 disabled={!!p2pStatus || !!p2pResult}
                 inputMode="numeric"
                 autoFocus
@@ -311,7 +311,7 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
                 type="button"
                 onClick={handleConnect}
                 disabled={roomCode.length !== 4 || !!p2pStatus || !!p2pResult}
-                className="inline-flex items-center justify-center rounded-3xl bg-gradient-to-r from-primary to-accent px-8 py-3 text-sm font-semibold text-background transition-all duration-300 hover:shadow-glow disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-primary to-accent px-6 py-2 text-xs font-semibold text-background transition-all duration-300 hover:shadow-glow disabled:cursor-not-allowed disabled:opacity-50 sm:rounded-3xl sm:px-8 sm:py-3 sm:text-sm"
               >
                 Connect
               </button>
@@ -319,54 +319,54 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
                 type="button"
                 onClick={handleRemoveP2P}
                 disabled={!roomCode && !p2pStatus && !p2pResult}
-                className="rounded-xl border border-onsurface/10 bg-onsurface/5 p-2.5 text-onsurface/60 transition-all duration-300 hover:border-primary/30 hover:text-primary hover:bg-primary/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="rounded-lg border border-onsurface/10 bg-onsurface/5 p-1.5 text-onsurface/60 transition-all duration-300 hover:border-primary/30 hover:text-primary hover:bg-primary/10 disabled:opacity-30 disabled:cursor-not-allowed sm:rounded-xl sm:p-2.5"
                 title="Clear"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
               </button>
             </div>
           </div>
 
-        <div className="mt-8 rounded-[2rem] border border-onsurface/10 bg-surface-low/90 p-6 shadow-sm">
-          <p className="text-sm uppercase tracking-[0.25em] text-primary/70">File preview</p>
-          <div className="mt-4 rounded-[1.5rem] border border-onsurface/5 bg-background/80 p-5 min-h-[200px]">
+        <div className="mt-4 rounded-2xl border border-onsurface/10 bg-surface-low/90 p-4 shadow-sm sm:mt-8 sm:rounded-[2rem] sm:p-6">
+          <p className="text-[10px] uppercase tracking-[0.25em] text-primary/70 sm:text-sm">File preview</p>
+          <div className="mt-3 rounded-xl border border-onsurface/5 bg-background/80 p-3 min-h-[100px] sm:mt-4 sm:rounded-[1.5rem] sm:p-5 sm:min-h-[200px]">
             {p2pResult ? (
-              <div className="space-y-3 animate-fade-in">
+              <div className="space-y-2 animate-fade-in sm:space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-onsurface/70">
+                  <p className="text-xs text-onsurface/70 sm:text-sm">
                     {p2pResult.length} file{p2pResult.length > 1 ? 's' : ''} received!
                   </p>
-                  <p className="text-sm font-semibold text-onsurface">
+                  <p className="text-xs font-semibold text-onsurface sm:text-sm">
                     {formatBytes(p2pResult.reduce((s, f) => s + f.fileSize, 0))}
                   </p>
                 </div>
-                <div className="max-h-48 space-y-2 overflow-y-auto">
+                <div className="max-h-36 space-y-1.5 overflow-y-auto sm:max-h-48 sm:space-y-2">
                   {p2pResult.map((info, i) => (
-                    <div key={i} className="flex items-center justify-between gap-2 rounded-2xl border border-onsurface/5 bg-background/60 px-3 py-2">
+                    <div key={i} className="flex items-center justify-between gap-2 rounded-xl border border-onsurface/5 bg-background/60 px-2 py-1.5 sm:rounded-2xl sm:px-3 sm:py-2">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-onsurface">{info.fileName}</p>
-                        <p className="text-xs text-onsurface/50">{formatBytes(info.fileSize)}</p>
+                        <p className="truncate text-xs font-medium text-onsurface sm:text-sm">{info.fileName}</p>
+                        <p className="text-[10px] text-onsurface/50 sm:text-xs">{formatBytes(info.fileSize)}</p>
                       </div>
                       <div className="flex gap-1 shrink-0">
                         <button
                           type="button"
                           onClick={() => downloadP2PFile(i)}
-                          className="rounded-xl bg-gradient-to-r from-primary to-accent px-3 py-2 text-white shadow-sm transition-all duration-300 hover:shadow-md"
+                          className="rounded-lg bg-gradient-to-r from-primary to-accent px-2 py-1.5 text-white shadow-sm transition-all duration-300 hover:shadow-md sm:rounded-xl sm:px-3 sm:py-2"
                           title="Download"
                         >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                           </svg>
                         </button>
                         <button
                           type="button"
                           onClick={() => setViewDetails(info)}
-                          className="rounded-xl border border-onsurface/10 bg-onsurface/5 px-3 py-2 text-onsurface/60 transition-all duration-300 hover:border-primary/30 hover:text-primary hover:bg-primary/10"
+                          className="rounded-lg border border-onsurface/10 bg-onsurface/5 px-2 py-1.5 text-onsurface/60 transition-all duration-300 hover:border-primary/30 hover:text-primary hover:bg-primary/10 sm:rounded-xl sm:px-3 sm:py-2"
                           title="Details"
                         >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
@@ -380,7 +380,7 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
                     <button
                       type="button"
                       onClick={downloadAllP2P}
-                      className="rounded-3xl bg-gradient-to-r from-primary to-accent px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:shadow-md"
+                      className="rounded-2xl bg-gradient-to-r from-primary to-accent px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all duration-300 hover:shadow-md sm:rounded-3xl sm:px-5 sm:py-2.5 sm:text-sm"
                     >
                       Download All
                     </button>
@@ -388,30 +388,30 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
                   <button
                     type="button"
                     onClick={handleRemoveP2P}
-                    className="rounded-3xl border border-red-500/30 bg-red-500/10 px-5 py-2.5 text-sm font-semibold text-red-400 transition-all duration-300 hover:bg-red-500/20"
+                    className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs font-semibold text-red-400 transition-all duration-300 hover:bg-red-500/20 sm:rounded-3xl sm:px-5 sm:py-2.5 sm:text-sm"
                   >
                     Clear
                   </button>
                 </div>
               </div>
             ) : p2pStatus ? (
-              <div className="space-y-3 animate-fade-in">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <svg className="w-5 h-5 text-primary animate-spin shrink-0" viewBox="0 0 24 24" fill="none">
+              <div className="space-y-2 animate-fade-in sm:space-y-3">
+                <div className="flex items-start justify-between gap-2 sm:gap-3">
+                  <div className="flex items-center gap-2 min-w-0 sm:gap-3">
+                    <svg className="w-4 h-4 text-primary animate-spin shrink-0 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    <p className="text-sm font-medium text-onsurface">{p2pStatus}</p>
+                    <p className="text-xs font-medium text-onsurface sm:text-sm">{p2pStatus}</p>
                   </div>
                   {!p2pResult && (
                     <button
                       type="button"
                       onClick={handleRemoveP2P}
-                      className="shrink-0 rounded-xl border border-onsurface/10 bg-onsurface/5 p-1.5 text-onsurface/60 transition-all duration-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30"
+                      className="shrink-0 rounded-lg border border-onsurface/10 bg-onsurface/5 p-1 text-onsurface/60 transition-all duration-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 sm:rounded-xl sm:p-1.5"
                       title="Cancel"
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
@@ -419,26 +419,26 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
                 </div>
                 {p2pProgress > 0 && (
                   <div className="space-y-1">
-                    <div className="h-2 overflow-hidden rounded-full bg-onsurface/5">
+                    <div className="h-1.5 overflow-hidden rounded-full bg-onsurface/5 sm:h-2">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
                         style={{ width: `${p2pProgress}%` }}
                       />
                     </div>
-                    <p className="text-xs text-onsurface/60 text-right">{p2pProgress}%</p>
+                    <p className="text-[10px] text-onsurface/60 text-right sm:text-xs">{p2pProgress}%</p>
                   </div>
                 )}
               </div>
             ) : (
-              <p className="text-sm text-onsurface/50">Enter a code above to receive a file.</p>
+              <p className="text-xs text-onsurface/50 sm:text-sm">Enter a code above to receive a file.</p>
             )}
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 rounded-3xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400 animate-fade-in">
-          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="flex items-center gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400 animate-fade-in sm:rounded-3xl sm:px-4 sm:py-3 sm:text-sm">
+          <svg className="w-3 h-3 shrink-0 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           {error}
@@ -447,33 +447,33 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
 
       {viewDetails && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in" onClick={() => setViewDetails(null)}>
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl ring-1 ring-black/5 animate-slide-up" onClick={(e) => e.stopPropagation()}>
+          <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl ring-1 ring-black/5 animate-slide-up sm:max-w-md sm:rounded-3xl sm:p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary/70">File Details</p>
-              <button onClick={() => setViewDetails(null)} className="rounded-xl p-1.5 text-onsurface-variant hover:bg-onsurface/10">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70 sm:text-sm">File Details</p>
+              <button onClick={() => setViewDetails(null)} className="rounded-lg p-1 text-onsurface-variant hover:bg-onsurface/10 sm:rounded-xl sm:p-1.5">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <div className="mt-5 space-y-4">
+            <div className="mt-4 space-y-3 sm:mt-5 sm:space-y-4">
               <div>
-                <p className="text-xs text-onsurface-variant uppercase tracking-wider">Name</p>
-                <p className="mt-1 font-semibold text-onsurface break-all">{viewDetails.fileName}</p>
+                <p className="text-[10px] text-onsurface-variant uppercase tracking-wider sm:text-xs">Name</p>
+                <p className="mt-1 text-xs font-semibold text-onsurface break-all sm:text-sm">{viewDetails.fileName}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <p className="text-xs text-onsurface-variant uppercase tracking-wider">Size</p>
-                  <p className="mt-1 font-semibold text-onsurface">{formatBytes(viewDetails.fileSize)}</p>
+                  <p className="text-[10px] text-onsurface-variant uppercase tracking-wider sm:text-xs">Size</p>
+                  <p className="mt-1 text-xs font-semibold text-onsurface sm:text-sm">{formatBytes(viewDetails.fileSize)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-onsurface-variant uppercase tracking-wider">Type</p>
-                  <p className="mt-1 font-semibold text-onsurface break-all">{viewDetails.mimeType || 'Unknown'}</p>
+                  <p className="text-[10px] text-onsurface-variant uppercase tracking-wider sm:text-xs">Type</p>
+                  <p className="mt-1 text-xs font-semibold text-onsurface break-all sm:text-sm">{viewDetails.mimeType || 'Unknown'}</p>
                 </div>
               </div>
               <div>
-                <p className="text-xs text-onsurface-variant uppercase tracking-wider">Date &amp; Time</p>
-                <p className="mt-1 font-semibold text-onsurface">{new Date().toLocaleString()}</p>
+                <p className="text-[10px] text-onsurface-variant uppercase tracking-wider sm:text-xs">Date &amp; Time</p>
+                <p className="mt-1 text-xs font-semibold text-onsurface sm:text-sm">{new Date().toLocaleString()}</p>
               </div>
             </div>
           </div>

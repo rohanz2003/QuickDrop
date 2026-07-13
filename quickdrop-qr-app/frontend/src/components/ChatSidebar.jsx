@@ -52,7 +52,7 @@ export default function ChatSidebar({ messages, connected, onSend, role, fullScr
       </div>
 
       {/* Messages */}
-      <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-3 min-h-0">
+      <div ref={listRef} className="flex-1 overflow-y-auto px-3 py-2 min-h-0 sm:px-4 sm:py-3">
         {messages.length === 0 && (
           <p className="mt-8 text-center text-xs text-[#9ca3af]">No messages yet.</p>
         )}
@@ -63,7 +63,7 @@ export default function ChatSidebar({ messages, connected, onSend, role, fullScr
                 ? 'bg-gradient-to-r from-[#4338ca] to-[#6366f1] text-white rounded-br-md'
                 : 'bg-[#f3f4f6] text-[#1a1a2e] rounded-bl-md'
             }`}>
-              <p className="break-words">{msg.text}</p>
+              <p className="break-words text-xs sm:text-sm">{msg.text}</p>
               <p className={`mt-0.5 text-[10px] ${msg.from === 'me' ? 'text-white/60' : 'text-[#9ca3af]'}`}>
                 {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>

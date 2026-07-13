@@ -99,15 +99,15 @@ function App() {
   return (
     <div className="flex min-h-screen flex-col bg-background text-onsurface sm:h-screen">
       {/* HEADER */}
-      <header className="bg-gradient-to-r from-[#4338ca] via-[#3730a3] to-[#312e81] px-4 py-3 shadow-lg shadow-indigo-500/20 sm:sticky sm:top-0 sm:z-30 sm:px-6 sm:py-4">
+      <header className="bg-gradient-to-r from-[#4338ca] via-[#3730a3] to-[#312e81] px-3 py-2 shadow-lg shadow-indigo-500/20 sm:sticky sm:top-0 sm:z-30 sm:px-6 sm:py-4">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#4338ca] to-[#6366f1] shadow-md shadow-white/10 sm:h-10 sm:w-10">
-              <span className="text-base font-extrabold text-white sm:text-lg">Q</span>
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#4338ca] to-[#6366f1] shadow-md shadow-white/10 sm:h-10 sm:w-10 sm:rounded-xl">
+              <span className="text-sm font-extrabold text-white sm:text-lg">Q</span>
             </div>
             <div>
-              <p className="text-base font-bold text-white sm:text-lg">QuickDrop</p>
-              <p className="text-[10px] text-indigo-200/80 sm:text-[11px]">P2P file sharing</p>
+              <p className="text-sm font-bold text-white sm:text-lg">QuickDrop</p>
+              <p className="text-[9px] text-indigo-200/80 sm:text-[11px]">P2P file sharing</p>
             </div>
           </div>
 
@@ -145,7 +145,7 @@ function App() {
         )}
 
         {/* Main content */}
-        <div className="flex flex-1 flex-col overflow-y-auto px-4 py-6 pb-24 min-h-0 sm:px-10 sm:pb-8">
+        <div className="flex flex-1 flex-col overflow-y-auto px-3 py-3 pb-20 min-h-0 sm:px-10 sm:py-6 sm:pb-8">
           {/* Desktop tab switcher (hidden on mobile) */}
           <div className="hidden self-center sm:inline-flex sm:gap-1.5 sm:rounded-2xl sm:bg-white sm:p-1.5 sm:shadow-sm sm:ring-1 sm:ring-black/5">
             {tabs.map((tab) => (
@@ -166,7 +166,7 @@ function App() {
             ))}
           </div>
 
-          <div className="mt-6 flex-1 overflow-y-auto min-h-0 sm:mt-8">
+          <div className="mt-3 flex-1 overflow-y-auto min-h-0 sm:mt-8">
             {tabsContent && (
               <>
                 <div className={activeTab === 'Send' ? 'block' : 'hidden'}>{tabsContent.Send}</div>
