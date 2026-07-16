@@ -212,7 +212,7 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
     const sendNext = () => {
       if (channel.readyState !== 'open') return;
 
-      while (fileIdx < files.length && channel.bufferedAmount < 1048576) {
+      while (fileIdx < files.length && channel.bufferedAmount < 5242880) {
         const file = files[fileIdx];
         const end = Math.min(offset + CHUNK_SIZE, file.size);
         channel.send(file.slice(offset, end));
@@ -227,11 +227,16 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
         for (let i = 0; i < fileIdx; i++) totalSent += files[i].size;
         totalSent += offset;
         const pct = Math.round((totalSent / totalSize) * 100);
-        const elapsed = (Date.now() - sendStartTime) / 1000;
-        const rate = totalSent / elapsed;
-        const remaining = rate > 0 ? Math.round((totalSize - totalSent) / rate) : 0;
-        const eta = remaining >= 60 ? `${Math.floor(remaining / 60)}m ${remaining % 60}s` : `${remaining}s`;
-        setState((prev) => ({ ...prev, progress: pct, statusText: `Sending ${pct}% · ${eta} left` }));
+        const statusText = pct >= 5
+          ? (() => {
+              const elapsed = (Date.now() - sendStartTime) / 1000;
+              const rate = totalSent / elapsed;
+              const remaining = rate > 0 ? Math.round((totalSize - totalSent) / rate) : 0;
+              const eta = remaining >= 60 ? `${Math.floor(remaining / 60)}m ${remaining % 60}s` : `${remaining}s`;
+              return `Sending ${pct}% · ${eta} left`;
+            })()
+          : `Sending ${pct}%`;
+        setState((prev) => ({ ...prev, progress: pct, statusText }));
       }
 
       if (fileIdx >= files.length) {
@@ -246,7 +251,7 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
       channel.onbufferedamountlow = sendNext;
     };
 
-    channel.bufferedAmountLowThreshold = 262144;
+    channel.bufferedAmountLowThreshold = 1048576;
     sendNext();
   };
 

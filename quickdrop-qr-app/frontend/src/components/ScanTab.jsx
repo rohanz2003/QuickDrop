@@ -221,12 +221,17 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
         if (list && list.length) {
           const total = list.reduce((s, f) => s + f.fileSize, 0);
           const pct = Math.round((receivedSizeRef.current / total) * 100);
-          const elapsed = (Date.now() - receiveStartTimeRef.current) / 1000;
-          const rate = receivedSizeRef.current / elapsed;
-          const remaining = rate > 0 ? Math.round((total - receivedSizeRef.current) / rate) : 0;
-          const eta = remaining >= 60 ? `${Math.floor(remaining / 60)}m ${remaining % 60}s` : `${remaining}s`;
+          const statusText = pct >= 5
+            ? (() => {
+                const elapsed = (Date.now() - receiveStartTimeRef.current) / 1000;
+                const rate = receivedSizeRef.current / elapsed;
+                const remaining = rate > 0 ? Math.round((total - receivedSizeRef.current) / rate) : 0;
+                const eta = remaining >= 60 ? `${Math.floor(remaining / 60)}m ${remaining % 60}s` : `${remaining}s`;
+                return `Receiving ${pct}% · ${eta} left`;
+              })()
+            : `Receiving ${pct}%`;
           setP2pProgress(pct);
-          setP2pStatus(`Receiving ${pct}% · ${eta} left`);
+          setP2pStatus(statusText);
           if (pct >= 100) tryFinish();
         }
       };
