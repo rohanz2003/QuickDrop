@@ -187,6 +187,7 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
     const totalSize = files.reduce((sum, f) => sum + f.size, 0);
     let fileIdx = 0;
     let offset = 0;
+    const sendStartTime = Date.now();
 
     const onDone = () => {
       setState((prev) => ({ ...prev, uploading: false, progress: 100, statusText: 'Complete!' }));
@@ -226,7 +227,11 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
         for (let i = 0; i < fileIdx; i++) totalSent += files[i].size;
         totalSent += offset;
         const pct = Math.round((totalSent / totalSize) * 100);
-        setState((prev) => ({ ...prev, progress: pct, statusText: `Sending ${pct}%` }));
+        const elapsed = (Date.now() - sendStartTime) / 1000;
+        const rate = totalSent / elapsed;
+        const remaining = rate > 0 ? Math.round((totalSize - totalSent) / rate) : 0;
+        const eta = remaining >= 60 ? `${Math.floor(remaining / 60)}m ${remaining % 60}s` : `${remaining}s`;
+        setState((prev) => ({ ...prev, progress: pct, statusText: `Sending ${pct}% · ${eta} left` }));
       }
 
       if (fileIdx >= files.length) {

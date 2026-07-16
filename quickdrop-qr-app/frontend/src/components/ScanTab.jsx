@@ -38,6 +38,7 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
   const receivedSizeRef = useRef(0);
   const fileMetaRef = useRef(null);
   const fileListRef = useRef(null);
+  const receiveStartTimeRef = useRef(0);
   const endReceivedRef = useRef(false);
   const blobsRef = useRef([]);
 
@@ -195,6 +196,7 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
             fileMetaRef.current = fileList[0] || null;
             receiveBufferRef.current = [];
             receivedSizeRef.current = 0;
+            receiveStartTimeRef.current = Date.now();
             setP2pStatus(`Receiving ${fileList.length} file${fileList.length > 1 ? 's' : ''}...`);
             return;
           }
@@ -208,6 +210,7 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
             fileMetaRef.current = meta;
             receiveBufferRef.current = [];
             receivedSizeRef.current = 0;
+            receiveStartTimeRef.current = Date.now();
             return;
           }
         }
@@ -218,8 +221,12 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
         if (list && list.length) {
           const total = list.reduce((s, f) => s + f.fileSize, 0);
           const pct = Math.round((receivedSizeRef.current / total) * 100);
+          const elapsed = (Date.now() - receiveStartTimeRef.current) / 1000;
+          const rate = receivedSizeRef.current / elapsed;
+          const remaining = rate > 0 ? Math.round((total - receivedSizeRef.current) / rate) : 0;
+          const eta = remaining >= 60 ? `${Math.floor(remaining / 60)}m ${remaining % 60}s` : `${remaining}s`;
           setP2pProgress(pct);
-          setP2pStatus(`Receiving ${pct}%`);
+          setP2pStatus(`Receiving ${pct}% · ${eta} left`);
           if (pct >= 100) tryFinish();
         }
       };
