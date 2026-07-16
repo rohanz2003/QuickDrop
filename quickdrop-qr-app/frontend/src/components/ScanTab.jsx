@@ -86,15 +86,23 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
     setP2pProgress(100);
   };
 
-  const startP2PDownload = useCallback(async (roomId) => {
+  const startP2PDownload = async (roomId) => {
     setP2pStatus('Connecting...');
     setP2pProgress(0);
+
+    const ws = new WebSocket(SIGNALING_WS_URL);
+    wsRef.current = ws;
 
     const peer = new RTCPeerConnection(RTC_CONFIG);
     peerRef.current = peer;
 
+    ws.onerror = () => {
+      setError('Signaling connection failed');
+      setP2pStatus('');
+    };
+
     peer.onicecandidate = (e) => {
-      if (e.candidate && ws?.readyState === WebSocket.OPEN) {
+      if (e.candidate && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
           type: 'signal',
           payload: { roomId, candidate: e.candidate.toJSON() }
@@ -106,15 +114,12 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
       if (peer.connectionState === 'connected') {
         onChannelUpdate?.({ connected: true });
       }
-      if (peer.connectionState === 'disconnected' || peer.connectionState === 'failed') {
+      if (peer.connectionState === 'failed') {
         setError('Peer disconnected');
         setP2pStatus('');
         onChannelUpdate?.({ connected: false });
       }
     };
-
-    const ws = new WebSocket(SIGNALING_WS_URL);
-    wsRef.current = ws;
 
     ws.onopen = () => {
       ws.send(JSON.stringify({ type: 'join-offer', payload: { roomId } }));
@@ -154,11 +159,6 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
         setError(msg.payload.message);
         setP2pStatus('');
       }
-    };
-
-    ws.onerror = () => {
-      setError('Signaling connection failed');
-      setP2pStatus('');
     };
 
     peer.ondatachannel = (event) => {
@@ -236,8 +236,7 @@ export default function ScanTab({ clientId, pendingRoom, onChannelUpdate }) {
         setP2pStatus('');
       };
     };
-
-  }, [clientId]);
+  };
 
   const handleConnect = () => {
     const code = roomCode.trim();

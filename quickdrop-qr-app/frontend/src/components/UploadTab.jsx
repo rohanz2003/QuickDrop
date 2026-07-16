@@ -75,11 +75,18 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
 
       setState((prev) => ({ ...prev, roomCode: roomId, statusText: 'Waiting for receiver to connect...' }));
 
+      const ws = new WebSocket(SIGNALING_WS_URL);
+      wsRef.current = ws;
+
       const peer = new RTCPeerConnection(RTC_CONFIG);
       peerRef.current = peer;
 
+      ws.onerror = () => {
+        setState((prev) => ({ ...prev, error: 'Signaling connection failed', uploading: false }));
+      };
+
       peer.onicecandidate = (e) => {
-        if (e.candidate && ws?.readyState === WebSocket.OPEN) {
+        if (e.candidate && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({
             type: 'signal',
             payload: { roomId, candidate: e.candidate.toJSON() }
@@ -91,7 +98,7 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
         if (peer.connectionState === 'connected') {
           onChannelUpdate?.({ connected: true });
         }
-        if (peer.connectionState === 'disconnected' || peer.connectionState === 'failed') {
+        if (peer.connectionState === 'failed') {
           setState((prev) => ({ ...prev, error: 'Peer disconnected', uploading: false }));
           onChannelUpdate?.({ connected: false });
         }
@@ -125,8 +132,6 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
 
-      const ws = new WebSocket(SIGNALING_WS_URL);
-      wsRef.current = ws;
       const pendingCandidates = [];
 
       ws.onopen = () => {
@@ -165,10 +170,6 @@ export default function UploadTab({ clientId, onChannelUpdate }) {
         if (msg.type === 'error') {
           setState((prev) => ({ ...prev, error: msg.payload.message, uploading: false }));
         }
-      };
-
-      ws.onerror = () => {
-        setState((prev) => ({ ...prev, error: 'Signaling connection failed', uploading: false }));
       };
 
     } catch (err) {
